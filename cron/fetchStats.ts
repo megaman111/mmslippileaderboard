@@ -15,7 +15,7 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
   // Format: "PLAYER#123" where 123 is the 3-digit connect code
   return [
     // Add your connect codes here, for example:
-    "MM#391",
+    "MM#391","CLICH#3", "ALEX#154", "SNAP#1", "SGUN#420", "JELO#421", "MOJ#383", "SAM#0", "LOU#258", "ADWA#358", "CRAY#527", "OMAR#341", "KB795", "KJH#23", "ZEOD#69" 
    
     // "PLAYER3#789"
   ];

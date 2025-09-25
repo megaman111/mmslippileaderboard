@@ -13,5 +13,5 @@ module.exports = {
 
   // Google sheets ID for player connect codes.
   // https://docs.google.com/spreadsheets/d/[YOUR ID]
-  spreadsheetID: '1DPIFD0RUA3yjruregmFUbUJ7ccdOjVB2LBp0goHvL-A',
+  spreadsheetID: '1SWxokawy2O_SvKM1hj8CE7ZSfb58DFApB6GaxlQubLA',
 };
