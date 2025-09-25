@@ -1,7 +1,7 @@
 {
-  "name": "react-pages-boilerplate",
+  "name": "mmslippileaderboard",
   "version": "1.0.0",
-  "description": "Simple boilerplate for working with React, redux, react-router and Github Pages",
+  "description": "Slippi Ranked Leaderboard",
   "private": "true",
   "main": "index.js",
   "scripts": {
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rtivital/react-pages-boilerplate.git"
+    "url": "git+https://github.com/megaman111/mmslippileaderboard.git"
   },
-  "author": "Vitaly Rtishchev <rtivital@gmail.com> (http://github.com/rtivital)",
+  "author": "megaman111",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rtivital/react-pages-boilerplate/issues"
+    "url": "https://github.com/megaman111/mmslippileaderboard/issues"
   },
-  "homepage": "https://grantismo.github.io/CoSlippiLeaderboard/",
+  "homepage": "https://megaman111.github.io/mmslippileaderboard/",
   "dependencies": {
     "buffer": "^6.0.3",
     "classnames": "^2.3.1",
