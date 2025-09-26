@@ -19,7 +19,8 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
     "MOJ#383", "SAM#0", "LOU#258", "ADWA#358", "CRAY#527", "OMAR#341", 
     "KB#795", "KJH#23", "ZEOD#609" , "FITZ#433","PENG#444", "TYPH#474",
      "SF#818","TSUK#668", "DD#0", "PREE#696", "PAL#0",  "SS#03", "MEDZ#841",
-     "FFF#641","LEXR#881","STAV#838","RAUL#132","LAXN#455","KDOG#261", "ARRW#135",  
+     "FFF#641","LEXR#881","STAV#838","RAUL#132","LAXN#455","KDOG#261", "ARRW#135",
+     "AERI#564", "CHUG#596", "MOT#510","GOOS#584", "CHIC#937", "" 
     // "PLAYER3#789"
   ];
 };
