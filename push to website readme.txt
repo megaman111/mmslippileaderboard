@@ -5,3 +5,5 @@ How to update the leaderboard:
 
 might need to clear the cache of the leaderboard website after deploying.
 Make sure you are in the directory C:\Users\jojog\Desktop\WebDev\Slippi Leaderboard\CoSlippiLeaderboard
+git add .  
+git commit -m ":)"
