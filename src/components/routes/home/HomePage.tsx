@@ -13,9 +13,10 @@ dayjs.extend(relativeTime)
 
 // Import history - fetchStats.ts ensures this file exists (even if empty initially)
 import historyJson from '../../../../cron/data/history.json';
-const historyData: Array<{timestamp: number, players: Player[]}> = Array.isArray(historyJson) 
+// Type assertion since JSON imports can vary in structure
+const historyData: Array<{timestamp: number, players: Player[]}> = (Array.isArray(historyJson) 
   ? historyJson 
-  : (historyJson.default || []);
+  : (historyJson as any)?.default || []) as Array<{timestamp: number, players: Player[]}>;
 
 
 const setCount = (player: Player) => {
