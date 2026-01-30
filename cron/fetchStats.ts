@@ -50,12 +50,58 @@ async function main() {
   const newFile = path.join(__dirname, 'data/players-new.json')
   const oldFile = path.join(__dirname, 'data/players-old.json')
   const timestamp = path.join(__dirname, 'data/timestamp.json')
+  const historyFile = path.join(__dirname, 'data/history.json')
+
+  // Read existing history or create new
+  let history: Array<{timestamp: number, players: any[]}> = [];
+  try {
+    const historyData = await fs.readFile(historyFile, 'utf-8');
+    history = JSON.parse(historyData);
+  } catch (e) {
+    // History file doesn't exist yet, start fresh
+    console.log('Creating new history file.');
+    // Create empty history file so webpack can bundle it
+    await fs.writeFile(historyFile, JSON.stringify([]));
+  }
+
+  // Read current players-new.json to add to history before overwriting
+  try {
+    const currentData = await fs.readFile(newFile, 'utf-8');
+    const currentPlayers = JSON.parse(currentData);
+    const now = Date.now();
+    // Add current snapshot to history
+    history.push({
+      timestamp: now,
+      players: currentPlayers
+    });
+    // Keep only last 90 days of history (or adjust as needed)
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+    history = history.filter(entry => entry.timestamp > ninetyDaysAgo);
+    // Sort by timestamp descending (newest first)
+    history.sort((a, b) => b.timestamp - a.timestamp);
+  } catch (e) {
+    console.log('No existing players-new.json to add to history.');
+  }
 
   await fs.rename(newFile, oldFile)
   console.log('Renamed existing data file.');
   await fs.writeFile(newFile, JSON.stringify(players));
   await fs.writeFile(timestamp, JSON.stringify({updated: Date.now()}));
-  console.log('Wrote new data file and timestamp.');
+  
+  // Also add the new snapshot to history
+  const now = Date.now();
+  history.push({
+    timestamp: now,
+    players: players
+  });
+  // Keep only last 90 days of history (or adjust as needed)
+  const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+  history = history.filter(entry => entry.timestamp > ninetyDaysAgo);
+  // Sort by timestamp descending (newest first)
+  history.sort((a, b) => b.timestamp - a.timestamp);
+  
+  await fs.writeFile(historyFile, JSON.stringify(history));
+  console.log('Wrote new data file, timestamp, and history.');
   const rootDir = path.normalize(path.join(__dirname, '..'))
   console.log(rootDir)
   // if no current git changes

@@ -8,7 +8,14 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime' // import plugin
 import * as settings from '../../../../settings'
 import ColoradoFlag from '../../../../images/Flag_of_Colorado.svg';
+import { HistoryView } from './HistoryView';
 dayjs.extend(relativeTime)
+
+// Import history - fetchStats.ts ensures this file exists (even if empty initially)
+import historyJson from '../../../../cron/data/history.json';
+const historyData: Array<{timestamp: number, players: Player[]}> = Array.isArray(historyJson) 
+  ? historyJson 
+  : (historyJson.default || []);
 
 
 const setCount = (player: Player) => {
@@ -30,6 +37,8 @@ const sortAndPopulatePlayers = (players: Player[]) => {
 export default function HomePage() {
   console.log(playersNew);
   console.log(playersOld);
+
+  const [showHistory, setShowHistory] = useState(false);
 
   const rankedPlayersOld = sortAndPopulatePlayers(playersOld)
   const oldPlayersMap = new Map(
@@ -54,6 +63,10 @@ export default function HomePage() {
     };
   }, []);
 
+  if (showHistory) {
+    return <HistoryView history={historyData} onClose={() => setShowHistory(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center h-screen p-8">
       <img className="h-48" src={ColoradoFlag} alt="colorado flag" />
@@ -61,6 +74,14 @@ export default function HomePage() {
         {settings.title}
       </h1>
       <div className="p-1 text-gray-300"> Updated {updateDesc}</div>
+      {historyData.length > 0 && (
+        <button
+          onClick={() => setShowHistory(true)}
+          className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Show History
+        </button>
+      )}
       <Table players={players} />
       <div className="p-4 text-gray-300 flex flex-col">
         <div>Built by blorppppp, maintained by mmunder</div>
