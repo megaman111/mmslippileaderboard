@@ -66,7 +66,7 @@ export function Row({ player, history }: Props) {
   const regionalRank = player.rankedNetplayProfile.dailyRegionalPlacement;
 
   return (
-    <tr className={`${playerRank.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600`} >
+    <tr className={`${playerRank.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600 hover:bg-opacity-80 hover:brightness-110 transition-all duration-200 cursor-pointer`} >
       <td className="md:text-2xl text-gray-300 md:px-6 md:py-4 md:p-1 whitespace-nowrap">
         <div>{isActive && `#${player.rankedNetplayProfile.rank}`}</div>
         {Boolean(rankChange) && changeArrow(rankChange)} </td>
