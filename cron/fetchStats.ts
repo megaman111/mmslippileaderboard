@@ -4,7 +4,6 @@ import { getPlayerDataThrottled } from './slippi'
 import * as syncFs from 'fs';
 import * as path from 'path';
 import util from 'util';
-import * as settings from '../settings'
 
 import { exec } from 'child_process';
 const fs = syncFs.promises;
@@ -16,12 +15,12 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
   return [
     // Add your connect codes here, for example:
     "MM#391","CLICH#3", "ALEX#154", "SNAP#1", "SGUN#420", "JELO#421", 
-    "MOJ#383", "SAM#0", "LOU#258", "ADWA#358", "CRAY#527", "OMAR#341", 
+    "MOJ#383", "SAM#0", "CRAY#527", "OMAR#341", 
     "KB#795", "KJH#23", "ZEOD#609" , "FITZ#433","PENG#444", "TYPH#474",
      "SF#818","TSUK#668", "DD#0", "PREE#696", "PAL#0",  "SS#03", "MEDZ#841",
      "FFF#641","LEXR#881","STAV#838","RAUL#132","LAXN#455","KDOG#261", "ARRW#135",
      "AERI#564", "CHUG#596", "MOT#510","GOOS#584", "CHIC#937", "ARTH#977", "DIO#969",
-     "SFAT#9", "DASH#909", "AUJO#939", "MRG#172", "RYSE#504" 
+     "SFAT#9", "DASH#909", "AUJO#939", "MRG#172", "RYSE#504", "RAIN#119", 
     // "PLAYER3#789"
   ];
 };
