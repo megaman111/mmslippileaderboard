@@ -14,28 +14,49 @@ export function FreeRankedDay() {
 
   // Calculate Free Ranked Day status
   const getFreeRankedStatus = () => {
-    // Base date: February 4, 2026 at 12:00 AM
-    const baseDate = new Date('2026-02-04T00:00:00');
-    const now = currentTime;
+    // Base date: February 4, 2026 at 12:00 AM PST
+    // Convert to UTC for consistent calculation
+    const baseDate = new Date('2026-02-04T08:00:00.000Z'); // 12 AM PST = 8 AM UTC
+    const now = new Date();
     
-    // Calculate days since base date (accounting for timezone)
-    const baseDateStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-    const nowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const timeDiff = nowStart.getTime() - baseDateStart.getTime();
+    // Calculate milliseconds since base date
+    const timeDiff = now.getTime() - baseDate.getTime();
+    
+    // If we're before the base date, calculate time until first free day
+    if (timeDiff < 0) {
+      const timeUntilFirst = Math.abs(timeDiff);
+      const daysLeft = Math.floor(timeUntilFirst / (1000 * 60 * 60 * 24));
+      const hoursLeft = Math.floor((timeUntilFirst % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutesLeft = Math.floor((timeUntilFirst % (1000 * 60 * 60)) / (1000 * 60));
+      const secondsLeft = Math.floor((timeUntilFirst % (1000 * 60)) / 1000);
+      
+      return {
+        isLive: false,
+        timeRemaining: {
+          days: daysLeft,
+          hours: hoursLeft,
+          minutes: minutesLeft,
+          seconds: secondsLeft
+        },
+        nextDate: baseDate
+      };
+    }
+    
+    // Calculate days since base date
     const daysSinceBase = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
     
     // Free Ranked Day occurs every 4 days starting from base date
-    // Day 0 of cycle = Free Ranked Day
     const cycleDay = daysSinceBase % 4;
     
-    const isLive = cycleDay === 0;
+    // Check if we're currently in a free ranked day (24-hour window)
+    const currentFreeDay = new Date(baseDate.getTime() + (Math.floor(daysSinceBase / 4) * 4 * 24 * 60 * 60 * 1000));
+    const endOfCurrentFreeDay = new Date(currentFreeDay.getTime() + (24 * 60 * 60 * 1000));
+    
+    const isLive = cycleDay === 0 && now >= currentFreeDay && now < endOfCurrentFreeDay;
     
     if (isLive) {
-      // Calculate time remaining in current free day (until midnight)
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      const timeLeft = endOfDay.getTime() - now.getTime();
+      // Calculate time remaining in current free day
+      const timeLeft = endOfCurrentFreeDay.getTime() - now.getTime();
       const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
       const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
       const secondsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
@@ -52,9 +73,7 @@ export function FreeRankedDay() {
     } else {
       // Calculate next free ranked day
       const daysUntilNext = 4 - cycleDay;
-      const nextFreeDay = new Date(nowStart);
-      nextFreeDay.setDate(nowStart.getDate() + daysUntilNext);
-      nextFreeDay.setHours(0, 0, 0, 0);
+      const nextFreeDay = new Date(baseDate.getTime() + (Math.floor(daysSinceBase / 4) * 4 + 4) * 24 * 60 * 60 * 1000);
       
       const timeUntilNext = nextFreeDay.getTime() - now.getTime();
       const daysLeft = Math.floor(timeUntilNext / (1000 * 60 * 60 * 24));
