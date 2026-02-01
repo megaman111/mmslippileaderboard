@@ -260,8 +260,8 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
     : 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{backdropFilter: 'blur(2px)'}}>
+      <div className="bg-gray-900 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl relative z-10">
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-start mb-6 border-b border-gray-700 pb-4">
