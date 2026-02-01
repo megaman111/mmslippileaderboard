@@ -1,4 +1,4 @@
-import { getPlayerDataThrottled } from './slippi'
+﻿import { getPlayerDataThrottled } from './slippi'
 // import { GoogleSpreadsheet } from 'google-spreadsheet';
 // import creds from '../secrets/creds.json';
 import * as syncFs from 'fs';
@@ -13,15 +13,64 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
   // Manual connect codes - replace these with actual Slippi connect codes
   // Format: "PLAYER#123" where 123 is the 3-digit connect code
   return [
-    // Add your connect codes here, for example:
-    "MM#391","CLICH#3", "ALEX#154", "SNAP#1", "SGUN#420", "JELO#421", 
-    "MOJ#383", "SAM#0", "CRAY#527", "OMAR#341", 
-    "KB#795", "KJH#23", "ZEOD#609" , "FITZ#433","PENG#444", "TYPH#474",
-     "SF#818","TSUK#668", "DD#0", "PREE#696", "PAL#0",  "SS#03", "MEDZ#841",
-     "FFF#641","LEXR#881","STAV#838","RAUL#132","LAXN#455","KDOG#261", "ARRW#135",
-     "AERI#564", "CHUG#596", "MOT#510","GOOS#584", "CHIC#937", "ARTH#977", "DIO#969",
-     "SFAT#9", "DASH#909", "AUJO#939", "MRG#172", "RYSE#504", "RAIN#119", 
-    // "PLAYER3#789"
+    "MM#391",
+    "CLICH#3",
+    "ALEX#154",
+    "SNAP#1",
+    "SGUN#420",
+    "JELO#421",
+    "MOJ#383",
+    "SAM#0",
+    "CRAY#527",
+    "OMAR#341",
+    "KB#795",
+    "KJH#23",
+    "ZEOD#609",
+    "FITZ#433",
+    "PENG#444",
+    "TYPH#474",
+    "SF#818",
+    "TSUK#668",
+    "DD#0",
+    "PREE#696",
+    "PAL#0",
+    "SS#03",
+    "MEDZ#841",
+    "FFF#641",
+    "LEXR#881",
+    "STAV#838",
+    "RAUL#132",
+    "LAXN#455",
+    "KDOG#261",
+    "ARRW#135",
+    "AERI#564",
+    "CHUG#596",
+    "MOT#510",
+    "GOOS#584",
+    "CHIC#937",
+    "ARTH#977",
+    "DIO#969",
+    "SFAT#9",
+    "DASH#909",
+    "AUJO#939",
+    "MRG#172",
+    "RYSE#504",
+    "RAIN#119",
+    "LAGO#525",
+    "SALT#747",
+    "PUNG#184",
+    "A#9",
+    "BRTL#477",
+    "DAT#160",
+    "DAN#877",
+    "FALC#483",
+    "PANT#706",
+    "AURA#833",
+    "CODY#007",
+    "AMSA#241",
+    "AGNT#607",
+    "PLAYER3#789",
+    "A#24"
   ];
 };
 
@@ -120,3 +169,4 @@ async function main() {
 }
 
 main();
+

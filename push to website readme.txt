@@ -1,8 +1,9 @@
 How to update the leaderboard:
-1.Open fetchStats.ts and navigate to const getPlayerConnectCodes array and input it there. 
-2.yarn ts-node cron/fetchStats.ts 
-3.Run the deploy script:
-   Option A (Recommended): .\deploy.ps1
+1. Make sure git is up to date (usually use git add. and then git commit -m ":)" )
+2.Open fetchStats.ts and navigate to const getPlayerConnectCodes array and input it there. 
+3.yarn ts-node cron/fetchStats.ts 
+4.Run the deploy script:
+   Option A (Recommended, Does both fetch stats and also updates the website): npm run update-and-deploy
    Option B: npm run deploy (requires GitHub token setup)
 
 
@@ -13,3 +14,27 @@ might need to clear the cache of the leaderboard website after deploying.
 Make sure you are in the directory C:\Users\jojog\Desktop\WebDev\Slippi Leaderboard\CoSlippiLeaderboard
 git add .  
 git commit -m ":)"
+
+AUTOMATIC UPDATES (NEW!):
+Set up automatic updates every 30 minutes while your computer is on:
+
+1. Setup (run as Administrator):
+   npm run setup-auto-update
+
+2. Check status anytime:
+   npm run check-auto-update
+
+3. Test single run:
+   npm run test-auto-update
+
+4. Remove automation:
+   npm run setup-auto-update -- -Remove
+
+The system will:
+- Automatically fetch stats and deploy every 30 minutes
+- Log all activity to cron/logs/auto-update.log
+- Handle errors gracefully and retry next cycle
+- Only run when your computer is on (pauses during sleep)
+- Use Windows Task Scheduler (built-in, reliable)
+
+Once set up, your leaderboard stays updated automatically - no manual work needed!

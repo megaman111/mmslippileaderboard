@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -96,44 +97,179 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
   const highestRank = getRank(createMockPlayer(maxRating));
   const lowestRank = getRank(createMockPlayer(minRating));
   
-  // Custom plugin to draw rank icons on Y-axis
+  // Pre-load rank images - simplified approach
+  const [rankImages, setRankImages] = React.useState<{[key: string]: HTMLImageElement}>({});
+  const [imagesLoaded, setImagesLoaded] = React.useState(false);
+  
+  React.useEffect(() => {
+    const loadImages = async () => {
+      console.log('Loading rank images...', { 
+        highestRank: highestRank.name, 
+        lowestRank: lowestRank.name,
+        highestIconUrl: highestRank.iconUrl,
+        lowestIconUrl: lowestRank.iconUrl
+      });
+      
+      const images: {[key: string]: HTMLImageElement} = {};
+      const loadPromises: Promise<void>[] = [];
+      
+      // Load highest rank image
+      if (highestRank.iconUrl) {
+        const loadHighest = new Promise<void>((resolve) => {
+          const highImg = new Image();
+          highImg.onload = () => {
+            console.log('Highest rank image loaded:', highImg.src, 'Size:', highImg.width, 'x', highImg.height);
+            images['highest'] = highImg;
+            resolve();
+          };
+          highImg.onerror = (e) => {
+            console.error('Failed to load highest rank image:', highImg.src, e);
+            resolve(); // Continue even if image fails
+          };
+          // Remove crossOrigin and load directly
+          highImg.src = highestRank.iconUrl!;
+        });
+        loadPromises.push(loadHighest);
+      }
+      
+      // Load lowest rank image (if different)
+      if (lowestRank.iconUrl && minRating !== maxRating && lowestRank.iconUrl !== highestRank.iconUrl) {
+        const loadLowest = new Promise<void>((resolve) => {
+          const lowImg = new Image();
+          lowImg.onload = () => {
+            console.log('Lowest rank image loaded:', lowImg.src, 'Size:', lowImg.width, 'x', lowImg.height);
+            images['lowest'] = lowImg;
+            resolve();
+          };
+          lowImg.onerror = (e) => {
+            console.error('Failed to load lowest rank image:', lowImg.src, e);
+            resolve(); // Continue even if image fails
+          };
+          // Remove crossOrigin and load directly
+          lowImg.src = lowestRank.iconUrl!;
+        });
+        loadPromises.push(loadLowest);
+      }
+      
+      // Wait for all images to load (or fail)
+      await Promise.all(loadPromises);
+      
+      console.log('All images processed, loaded images:', Object.keys(images));
+      setRankImages(images);
+      setImagesLoaded(true);
+    };
+    
+    if (playerHistory.length > 0) {
+      loadImages();
+    }
+  }, [highestRank.iconUrl, lowestRank.iconUrl, minRating, maxRating, playerHistory.length]);
+  
+  // Custom plugin to draw rank icons on Y-axis - simplified approach
   const rankIconPlugin = {
     id: 'rankIcons',
     afterDraw: (chart: any) => {
+      if (!imagesLoaded || Object.keys(rankImages).length === 0) {
+        console.log('Images not ready, skipping draw');
+        return;
+      }
+      
       const ctx = chart.ctx;
       const yAxis = chart.scales.y;
       const chartArea = chart.chartArea;
       
-      // Draw highest rank icon at the top
-      const maxYPosition = yAxis.getPixelForValue(maxRating);
-      if (maxYPosition >= chartArea.top && maxYPosition <= chartArea.bottom && highestRank.iconUrl) {
-        const highImg = new Image();
-        highImg.src = highestRank.iconUrl;
-        if (highImg.complete) {
-          ctx.drawImage(highImg, chartArea.left - 30, maxYPosition - 10, 20, 20);
-          // Draw rating label
-          ctx.fillStyle = 'rgba(156, 163, 175, 1)';
-          ctx.font = '11px sans-serif';
-          ctx.textAlign = 'right';
-          ctx.fillText(maxRating.toString(), chartArea.left - 35, maxYPosition + 4);
-        }
+      if (!ctx || !yAxis || !chartArea) {
+        console.log('Chart not ready, skipping draw');
+        return;
       }
       
-      // Draw lowest rank icon at the bottom (only if different from highest)
-      if (minRating !== maxRating) {
-        const minYPosition = yAxis.getPixelForValue(minRating);
-        if (minYPosition >= chartArea.top && minYPosition <= chartArea.bottom && lowestRank.iconUrl) {
-          const lowImg = new Image();
-          lowImg.src = lowestRank.iconUrl;
-          if (lowImg.complete) {
-            ctx.drawImage(lowImg, chartArea.left - 30, minYPosition - 10, 20, 20);
-            // Draw rating label
-            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(minRating.toString(), chartArea.left - 35, minYPosition + 4);
+      console.log('Attempting to draw rank icons...');
+      
+      // Save context state
+      ctx.save();
+      
+      try {
+        // Draw highest rank icon at the top
+        const maxYPosition = yAxis.getPixelForValue(maxRating);
+        
+        if (maxYPosition >= chartArea.top && maxYPosition <= chartArea.bottom && rankImages['highest']) {
+          const highImg = rankImages['highest'];
+          
+          console.log('Drawing highest rank icon:', {
+            x: chartArea.left - 30,
+            y: maxYPosition - 10,
+            width: 20,
+            height: 20,
+            imageReady: highImg.complete && highImg.naturalWidth > 0
+          });
+          
+          if (highImg.complete && highImg.naturalWidth > 0) {
+            // Try drawing with error handling
+            try {
+              ctx.drawImage(highImg, chartArea.left - 30, maxYPosition - 10, 20, 20);
+              console.log('✓ Highest rank icon drawn successfully');
+              
+              // Draw rating label - moved up for better visibility
+              ctx.fillStyle = '#9CA3AF';
+              ctx.font = '11px sans-serif';
+              ctx.textAlign = 'right';
+              ctx.fillText(maxRating.toString(), chartArea.left - 35, maxYPosition - 2);
+            } catch (drawError) {
+              console.error('Error drawing highest rank image:', drawError);
+              
+              // Fallback: draw a colored circle
+              ctx.fillStyle = '#FFD700';
+              ctx.beginPath();
+              ctx.arc(chartArea.left - 20, maxYPosition, 8, 0, 2 * Math.PI);
+              ctx.fill();
+              console.log('Drew fallback circle for highest rank');
+            }
           }
         }
+        
+        // Draw lowest rank icon at the bottom (only if different from highest)
+        if (minRating !== maxRating && rankImages['lowest']) {
+          const minYPosition = yAxis.getPixelForValue(minRating);
+          
+          if (minYPosition >= chartArea.top && minYPosition <= chartArea.bottom) {
+            const lowImg = rankImages['lowest'];
+            
+            console.log('Drawing lowest rank icon:', {
+              x: chartArea.left - 30,
+              y: minYPosition - 10,
+              width: 20,
+              height: 20,
+              imageReady: lowImg.complete && lowImg.naturalWidth > 0
+            });
+            
+            if (lowImg.complete && lowImg.naturalWidth > 0) {
+              try {
+                ctx.drawImage(lowImg, chartArea.left - 30, minYPosition - 10, 20, 20);
+                console.log('✓ Lowest rank icon drawn successfully');
+                
+                // Draw rating label - moved up for better visibility
+                ctx.fillStyle = '#9CA3AF';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(minRating.toString(), chartArea.left - 35, minYPosition - 2);
+              } catch (drawError) {
+                console.error('Error drawing lowest rank image:', drawError);
+                
+                // Fallback: draw a colored circle
+                ctx.fillStyle = '#CD7F32';
+                ctx.beginPath();
+                ctx.arc(chartArea.left - 20, minYPosition, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                console.log('Drew fallback circle for lowest rank');
+              }
+            }
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error in rank icon plugin:', error);
+      } finally {
+        // Restore context state
+        ctx.restore();
       }
     }
   };
@@ -334,6 +470,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
                   data={chartData} 
                   options={chartOptions}
                   plugins={[rankIconPlugin]}
+                  key={imagesLoaded ? 'loaded' : 'loading'} // Force re-render when images load
                 />
               </div>
             </div>

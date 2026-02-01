@@ -9,7 +9,14 @@
     "start": "webpack serve",
     "build": "cross-env NODE_ENV=production webpack --progress",
     "deploy": "npm run build && gh-pages -d dist",
-    "lint": "eslint src --ext .ts --ext .tsx"
+    "lint": "eslint src --ext .ts --ext .tsx",
+    "fetch-stats": "yarn ts-node cron/fetchStats.ts",
+    "update-and-deploy": "yarn ts-node cron/fetchStats.ts && npm run deploy",
+    "setup-auto-update": "powershell -ExecutionPolicy Bypass -File setup-auto-update-simple.ps1",
+    "check-auto-update": "powershell -ExecutionPolicy Bypass -File check-auto-update.ps1",
+    "test-auto-update": "powershell -ExecutionPolicy Bypass -File auto-update-daemon.ps1 -RunOnce",
+    "manager": "powershell -ExecutionPolicy Bypass -File simple-manager.ps1",
+    "manager-gui": "powershell -ExecutionPolicy Bypass -File leaderboard-manager.ps1 -Action gui"
   },
   "repository": {
     "type": "git",

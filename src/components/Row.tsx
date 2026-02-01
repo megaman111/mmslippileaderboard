@@ -12,9 +12,10 @@ interface HistoryEntry {
 interface Props {
   player: Player;
   history?: HistoryEntry[];
+  isFirstPlace?: boolean;
 }
 
-export function Row({ player, history }: Props) {
+export function Row({ player, history, isFirstPlace }: Props) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const codeToId = (code: string) => {
@@ -64,10 +65,17 @@ export function Row({ player, history }: Props) {
   const isGrandmaster = playerRank.name === 'Grandmaster';
   const globalRank = player.rankedNetplayProfile.dailyGlobalPlacement;
   const regionalRank = player.rankedNetplayProfile.dailyRegionalPlacement;
+  
+  // Special styling for MM#391 and #1 player
+  const isMyCode = player.connectCode.code === 'MM#391';
+  const specialGlow = isMyCode ? 'shadow-[0_0_20px_rgba(59,130,246,0.8)] border-2 border-blue-400' : 
+                     isFirstPlace ? 'shadow-[0_0_20px_rgba(255,215,0,0.8)] border-2 border-yellow-400' : '';
+  const nameGlow = isMyCode ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] font-bold' : 
+                   isFirstPlace ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)] font-bold' : 'text-gray-300';
 
   return (
     <>
-      <tr className={`${playerRank.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600 ${!showHistoryModal ? 'hover:bg-opacity-80 hover:brightness-110 transition-all duration-200' : ''} cursor-pointer`} >
+      <tr className={`${playerRank.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600 ${!showHistoryModal ? 'hover:bg-opacity-80 hover:brightness-110 transition-all duration-200' : ''} cursor-pointer ${specialGlow}`} >
         <td className="md:text-2xl text-gray-300 md:px-6 md:py-4 md:p-1 whitespace-nowrap">
           <div>{isActive && `#${player.rankedNetplayProfile.rank}`}</div>
           {Boolean(rankChange) && changeArrow(rankChange)} </td>
@@ -75,7 +83,7 @@ export function Row({ player, history }: Props) {
           <div className="flex items-center justify-center gap-1">
             <button
               onClick={() => history && history.length > 0 && setShowHistoryModal(true)}
-              className={`md:text-xl text-sm max-w-xs text-gray-300 hover:text-gray-500 hover:underline ${
+              className={`md:text-xl text-sm max-w-xs ${nameGlow} hover:brightness-125 hover:underline ${
                 history && history.length > 0 ? 'cursor-pointer' : 'cursor-default'
               }`}
               disabled={!history || history.length === 0}
@@ -93,7 +101,7 @@ export function Row({ player, history }: Props) {
               </span>
             )}
           </div>
-          <div className="text-gray-300 text-xs">{player.connectCode.code}</div>
+          <div className={`text-xs ${isMyCode ? 'text-blue-300 font-semibold' : isFirstPlace ? 'text-yellow-300 font-semibold' : 'text-gray-300'}`}>{player.connectCode.code}</div>
           <a 
             href={codeToUrlSlug(player.connectCode.code)} 
             target="_blank" 
