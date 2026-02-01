@@ -10,6 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { Player } from '../lib/player';
+import { getRank } from '../lib/ranks';
 import dayjs from 'dayjs';
 
 ChartJS.register(
@@ -76,6 +77,67 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
 
   const playerHistory = getPlayerHistory();
   
+  // Find highest and lowest ratings to determine rank icons for Y-axis
+  const ratings = playerHistory.map(entry => entry.rating);
+  const minRating = Math.min(...ratings);
+  const maxRating = Math.max(...ratings);
+  
+  // Create mock player objects to determine ranks
+  const createMockPlayer = (rating: number): Player => ({
+    ...player,
+    rankedNetplayProfile: {
+      ...player.rankedNetplayProfile,
+      ratingOrdinal: rating,
+      wins: Math.max(player.rankedNetplayProfile.wins, 5), // Ensure minimum sets for ranking
+      losses: Math.max(player.rankedNetplayProfile.losses, 0)
+    }
+  });
+  
+  const highestRank = getRank(createMockPlayer(maxRating));
+  const lowestRank = getRank(createMockPlayer(minRating));
+  
+  // Custom plugin to draw rank icons on Y-axis
+  const rankIconPlugin = {
+    id: 'rankIcons',
+    afterDraw: (chart: any) => {
+      const ctx = chart.ctx;
+      const yAxis = chart.scales.y;
+      const chartArea = chart.chartArea;
+      
+      // Draw highest rank icon at the top
+      const maxYPosition = yAxis.getPixelForValue(maxRating);
+      if (maxYPosition >= chartArea.top && maxYPosition <= chartArea.bottom && highestRank.iconUrl) {
+        const highImg = new Image();
+        highImg.src = highestRank.iconUrl;
+        if (highImg.complete) {
+          ctx.drawImage(highImg, chartArea.left - 30, maxYPosition - 10, 20, 20);
+          // Draw rating label
+          ctx.fillStyle = 'rgba(156, 163, 175, 1)';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText(maxRating.toString(), chartArea.left - 35, maxYPosition + 4);
+        }
+      }
+      
+      // Draw lowest rank icon at the bottom (only if different from highest)
+      if (minRating !== maxRating) {
+        const minYPosition = yAxis.getPixelForValue(minRating);
+        if (minYPosition >= chartArea.top && minYPosition <= chartArea.bottom && lowestRank.iconUrl) {
+          const lowImg = new Image();
+          lowImg.src = lowestRank.iconUrl;
+          if (lowImg.complete) {
+            ctx.drawImage(lowImg, chartArea.left - 30, minYPosition - 10, 20, 20);
+            // Draw rating label
+            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(minRating.toString(), chartArea.left - 35, minYPosition + 4);
+          }
+        }
+      }
+    }
+  };
+  
   // Chart.js configuration
   const chartData = {
     labels: playerHistory.map(entry => entry.date),
@@ -103,6 +165,11 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       mode: 'index' as const,
       intersect: false,
     },
+    layout: {
+      padding: {
+        left: 40, // Extra padding for rank icons
+      },
+    },
     plugins: {
       legend: {
         display: true,
@@ -127,7 +194,10 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
             const entry = playerHistory[dataIndex];
             
             if (context.dataset.label === 'Rating') {
-              return `Rating: ${entry.rating}`;
+              // Determine rank for this rating
+              const mockPlayer = createMockPlayer(entry.rating);
+              const rank = getRank(mockPlayer);
+              return [`Rating: ${entry.rating}`, `Rank: ${rank.name}`];
             }
             return '';
           },
@@ -243,10 +313,27 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
                   <span className="text-yellow-400 text-sm ml-2">(Global Rankings)</span>
                 )}
               </h3>
+              <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
+                <div className="flex items-center gap-2">
+                  {highestRank.iconUrl && (
+                    <img src={highestRank.iconUrl} alt={highestRank.name} className="w-4 h-4" />
+                  )}
+                  <span>Peak: {highestRank.name} ({maxRating})</span>
+                </div>
+                {minRating !== maxRating && (
+                  <div className="flex items-center gap-2">
+                    {lowestRank.iconUrl && (
+                      <img src={lowestRank.iconUrl} alt={lowestRank.name} className="w-4 h-4" />
+                    )}
+                    <span>Low: {lowestRank.name} ({minRating})</span>
+                  </div>
+                )}
+              </div>
               <div className="h-80">
                 <Line 
                   data={chartData} 
                   options={chartOptions}
+                  plugins={[rankIconPlugin]}
                 />
               </div>
             </div>
