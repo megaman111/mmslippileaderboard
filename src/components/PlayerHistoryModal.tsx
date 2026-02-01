@@ -99,7 +99,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
     return images;
   }, []);
 
-  // Custom plugin to draw rank icons on Y-axis
+  // Custom plugin to draw rank icons and ratings on Y-axis when crossed
   const rankIconPlugin = {
     id: 'rankIcons',
     afterDraw: (chart: any) => {
@@ -107,15 +107,38 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       const yAxis = chart.scales.y;
       const chartArea = chart.chartArea;
       
-      rankThresholds.forEach(threshold => {
+      // Get the rating data points
+      const ratingData = playerHistory.map(entry => entry.rating);
+      
+      // Find which rank thresholds are crossed by the rating line
+      const crossedThresholds = rankThresholds.filter(threshold => {
+        // Check if any rating data point crosses this threshold
+        const minRating = Math.min(...ratingData);
+        const maxRating = Math.max(...ratingData);
+        return threshold.rating >= minRating && threshold.rating <= maxRating;
+      });
+      
+      crossedThresholds.forEach(threshold => {
         const yPosition = yAxis.getPixelForValue(threshold.rating);
         
         // Only draw if the position is within the chart area
         if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
           const img = rankImages[threshold.rating];
           if (img && img.complete) {
-            // Draw icon to the left of the Y-axis
-            ctx.drawImage(img, chartArea.left - 30, yPosition - 10, 20, 20);
+            // Draw icon on the y-axis
+            ctx.drawImage(img, chartArea.left - 50, yPosition - 10, 20, 20);
+            
+            // Draw the rating text next to the icon
+            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(threshold.rating.toString(), chartArea.left - 55, yPosition + 4);
+            
+            // Draw rank name
+            ctx.fillStyle = 'rgba(156, 163, 175, 0.8)';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(threshold.name, chartArea.left - 25, yPosition + 4);
           }
         }
       });
@@ -155,16 +178,6 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
   };
 
   const playerHistory = getPlayerHistory();
-  
-  // Get min and max ratings to determine which rank thresholds to show
-  const ratings = playerHistory.map(entry => entry.rating);
-  const minRating = Math.min(...ratings);
-  const maxRating = Math.max(...ratings);
-  
-  // Filter rank thresholds to only show relevant ones
-  const relevantThresholds = rankThresholds.filter(
-    threshold => threshold.rating >= minRating - 200 && threshold.rating <= maxRating + 200
-  );
 
   // Chart.js configuration
   const chartData = {
@@ -195,7 +208,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
     },
     layout: {
       padding: {
-        left: 40, // Extra padding for rank icons
+        left: 80, // Extra padding for rank icons and rating text
       },
     },
     plugins: {
@@ -223,7 +236,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
             
             if (context.dataset.label === 'Rating') {
               // Find the rank for this rating
-              const rank = relevantThresholds.find(t => entry.rating >= t.rating);
+              const rank = rankThresholds.find(t => entry.rating >= t.rating);
               const rankName = rank ? rank.name : 'Unranked';
               return [`Rating: ${entry.rating}`, `Rank: ${rankName}`];
             }
@@ -252,21 +265,15 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
           color: 'rgba(75, 85, 99, 0.3)',
         },
         ticks: {
-          color: 'rgba(59, 130, 246, 1)',
+          color: 'rgba(156, 163, 175, 1)',
           font: {
             size: 12,
           },
-          // Show occasional ratings instead of rank names
+          // Show minimal rating ticks, let the rank icons show the important thresholds
           callback: function(value: any) {
             const numValue = Number(value);
-            // Show ticks at meaningful rating intervals
-            if (numValue % 200 === 0 || 
-                numValue === 766 || numValue === 914 || numValue === 1055 || 
-                numValue === 1189 || numValue === 1316 || numValue === 1436 || 
-                numValue === 1549 || numValue === 1654 || numValue === 1752 || 
-                numValue === 1843 || numValue === 1928 || numValue === 2004 || 
-                numValue === 2074 || numValue === 2137 || numValue === 2192 || 
-                numValue === 2275 || numValue === 2350) {
+            // Show ticks at round hundreds for reference
+            if (numValue % 500 === 0) {
               return Math.floor(numValue);
             }
             return '';
@@ -347,33 +354,13 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
                   <span className="text-yellow-400 text-sm ml-2">(Global Rankings)</span>
                 )}
               </h3>
-              <div className="flex gap-6">
+              <div className="h-80">
                 {/* Chart */}
-                <div className="flex-1 h-80">
-                  <Line 
-                    data={chartData} 
-                    options={chartOptions} 
-                    plugins={[rankIconPlugin]}
-                  />
-                </div>
-                
-                {/* Rank Reference */}
-                <div className="w-48 bg-gray-800 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-white text-sm font-semibold mb-3">Rank Thresholds</h4>
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {relevantThresholds.slice().reverse().map((threshold, index) => (
-                      <div key={index} className="flex items-center gap-2 text-xs">
-                        <img 
-                          src={threshold.icon} 
-                          alt={threshold.name}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-gray-300 flex-1">{threshold.name}</span>
-                        <span className="text-gray-400">{Math.floor(threshold.rating)}+</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <Line 
+                  data={chartData} 
+                  options={chartOptions} 
+                  plugins={[rankIconPlugin]}
+                />
               </div>
             </div>
           ) : (
