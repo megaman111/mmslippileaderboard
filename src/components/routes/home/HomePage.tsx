@@ -75,6 +75,9 @@ export default function HomePage() {
         {settings.title}
       </h1>
       <div className="p-1 text-gray-300"> Updated {updateDesc}</div>
+      <div className="text-xs text-gray-400 mb-2">
+        📈 Click on player names to view their rating history over time
+      </div>
       {historyData.length > 0 && (
         <button
           onClick={() => setShowHistory(true)}
@@ -83,7 +86,7 @@ export default function HomePage() {
           Show History
         </button>
       )}
-      <Table players={players} />
+      <Table players={players} history={historyData} />
       <div className="p-4 text-gray-300 flex flex-col">
         <div>Built by blorppppp, maintained by mmunder</div>
         <div>

@@ -2,12 +2,22 @@
 
 Code powering https://grantismo.github.io/CoSlippiLeaderboard/#/
 
+## Features
+
+- **Real-time Leaderboard**: Displays current player rankings with ELO ratings
+- **Historical Data**: 90-day rolling history of all player data
+- **Individual Player Charts**: Click on any player name to view their ELO progression over time
+- **Rank Change Tracking**: Shows rank and rating changes between updates
+- **Character Usage Stats**: Visual breakdown of character usage per player
+- **Responsive Design**: Works on desktop and mobile devices
+
 ## Technologies
 
 - Typescript
 - [Webpack@5](https://webpack.js.org/) as module bundler
 - [Eslint](http://eslint.org/) for linting
 - [Tailwind](https://tailwindcss.com/) for css
+- [Chart.js](https://www.chartjs.org/) for ELO history graphs
 
 
 Fork of [reacts-pages-boilerplate](https://github.com/rtivital/react-pages-boilerplate)

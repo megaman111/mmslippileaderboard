@@ -1,3 +1,7 @@
 {
-  "cSpell.words": ["favicons", "wojtekmaj"]
+  "cSpell.words": [
+    "favicons",
+    "wojtekmaj"
+  ],
+  "kiroAgent.configureMCP": "Disabled"
 }

@@ -77,7 +77,7 @@ class StandardRank implements Rank {
 
 class GrandMaster extends StandardRank {
   constructor() {
-    super('Grandmaster', 2191.75, Infinity, "bg-slate-900", GrandMasterIcon)
+    super('Grandmaster', 2192, Infinity, "bg-slate-900", GrandMasterIcon)
   }
 
   isRank(player: Player) {
@@ -85,8 +85,9 @@ class GrandMaster extends StandardRank {
     if(!hasRating) {
       return false;
     }
-    return player.rankedNetplayProfile.dailyGlobalPlacement !== null
-      || player.rankedNetplayProfile.dailyRegionalPlacement !== null;
+    // Grandmaster requires being in top 300 (global or regional placement) AND over Master I rating (2192)
+    return (player.rankedNetplayProfile.dailyGlobalPlacement !== null && player.rankedNetplayProfile.dailyGlobalPlacement <= 300)
+      || (player.rankedNetplayProfile.dailyRegionalPlacement !== null && player.rankedNetplayProfile.dailyRegionalPlacement <= 300);
   }
 }
 
@@ -100,23 +101,23 @@ const INDIGO_BG = 'bg-indigo-900';
 export const RANKS = [
   new NoneRank(),
   new PendingRank(),
-  new StandardRank('Bronze I', 0, 765.42, ORANGE_BG, Bronze1Icon),
-  new StandardRank('Bronze II', 765.43, 913.71, ORANGE_BG, Bronze2Icon),
-  new StandardRank('Bronze III', 913.72, 1054.86, ORANGE_BG, Bronze3Icon),
-  new StandardRank('Silver I', 1054.87, 1188.87, SLATE_BG, Silver1Icon),
-  new StandardRank('Silver II', 1188.88, 1315.74, SLATE_BG, Silver2Icon),
-  new StandardRank('Silver III', 1315.75, 1435.47, SLATE_BG, Silver3Icon),
-  new StandardRank('Gold I', 1435.48, 1548.06, YELLOW_BG, Gold1Icon),
-  new StandardRank('Gold II', 1548.07, 1653.51, YELLOW_BG, Gold2Icon),
-  new StandardRank('Gold III', 1653.52, 1751.82, YELLOW_BG, Gold3Icon),
-  new StandardRank('Platinum I', 1751.83, 1842.99, SKY_BG, Platinum1Icon),
-  new StandardRank('Platinum II', 1843, 1927.02, SKY_BG, Platinum2Icon),
-  new StandardRank('Platinum III', 1927.03, 2003.91, SKY_BG, Platinum3Icon),
-  new StandardRank('Diamond I', 2003.92, 2073.66, BLUE_BG, Diamond1Icon),
-  new StandardRank('Diamond II', 2073.67, 2136.27, BLUE_BG, Diamond2Icon),
-  new StandardRank('Diamond III', 2136.28, 2191.74, BLUE_BG, Diamond3Icon),
-  new StandardRank('Master I', 2191.75, 2274.99, INDIGO_BG, Master1Icon),
-  new StandardRank('Master II', 2275, 2350, INDIGO_BG, Master2Icon),
+  new StandardRank('Bronze I', 0, 765, ORANGE_BG, Bronze1Icon),
+  new StandardRank('Bronze II', 766, 913, ORANGE_BG, Bronze2Icon),
+  new StandardRank('Bronze III', 914, 1054, ORANGE_BG, Bronze3Icon),
+  new StandardRank('Silver I', 1055, 1188, SLATE_BG, Silver1Icon),
+  new StandardRank('Silver II', 1189, 1315, SLATE_BG, Silver2Icon),
+  new StandardRank('Silver III', 1316, 1435, SLATE_BG, Silver3Icon),
+  new StandardRank('Gold I', 1436, 1548, YELLOW_BG, Gold1Icon),
+  new StandardRank('Gold II', 1549, 1653, YELLOW_BG, Gold2Icon),
+  new StandardRank('Gold III', 1654, 1751, YELLOW_BG, Gold3Icon),
+  new StandardRank('Platinum I', 1752, 1842, SKY_BG, Platinum1Icon),
+  new StandardRank('Platinum II', 1843, 1927, SKY_BG, Platinum2Icon),
+  new StandardRank('Platinum III', 1928, 2003, SKY_BG, Platinum3Icon),
+  new StandardRank('Diamond I', 2004, 2073, BLUE_BG, Diamond1Icon),
+  new StandardRank('Diamond II', 2074, 2136, BLUE_BG, Diamond2Icon),
+  new StandardRank('Diamond III', 2137, 2191, BLUE_BG, Diamond3Icon),
+  new StandardRank('Master I', 2192, 2274, INDIGO_BG, Master1Icon),
+  new StandardRank('Master II', 2275, 2349, INDIGO_BG, Master2Icon),
   new StandardRank('Master III', 2350, Infinity, INDIGO_BG, Master3Icon),
   new GrandMaster()
 ]

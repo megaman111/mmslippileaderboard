@@ -116,7 +116,7 @@ export function HistoryView({ history, onClose }: Props) {
         </div>
       </div>
       
-      <Table players={players} />
+      <Table players={players} history={history} />
     </div>
   );
 }

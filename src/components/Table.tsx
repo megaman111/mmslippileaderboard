@@ -2,11 +2,17 @@ import { Row } from './Row';
 import { Player } from '../lib/player'
 import { useMediaQuery } from 'react-responsive'
 
-interface Props {
-  players: Player[]
+interface HistoryEntry {
+  timestamp: number;
+  players: Player[];
 }
 
-export function Table({ players }: Props) {
+interface Props {
+  players: Player[];
+  history?: HistoryEntry[];
+}
+
+export function Table({ players, history }: Props) {
   const isSm = useMediaQuery({ query: '(min-width: 640px)' })
 
   const th = (text) => {
@@ -26,7 +32,7 @@ export function Table({ players }: Props) {
       </thead>
       {players.length > 0 &&
         <tbody>
-          {players.map((p: Player, index: number) => <Row key={p.displayName} player={p} />)}
+          {players.map((p: Player, index: number) => <Row key={p.displayName} player={p} history={history} />)}
         </tbody>
       }
     </table>
