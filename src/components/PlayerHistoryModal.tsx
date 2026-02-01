@@ -99,51 +99,6 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
     return images;
   }, []);
 
-  // Custom plugin to draw rank icons and ratings on Y-axis when crossed
-  const rankIconPlugin = {
-    id: 'rankIcons',
-    afterDraw: (chart: any) => {
-      const ctx = chart.ctx;
-      const yAxis = chart.scales.y;
-      const chartArea = chart.chartArea;
-      
-      // Get the rating data points
-      const ratingData = playerHistory.map(entry => entry.rating);
-      
-      // Find which rank thresholds are crossed by the rating line
-      const crossedThresholds = rankThresholds.filter(threshold => {
-        // Check if any rating data point crosses this threshold
-        const minRating = Math.min(...ratingData);
-        const maxRating = Math.max(...ratingData);
-        return threshold.rating >= minRating && threshold.rating <= maxRating;
-      });
-      
-      crossedThresholds.forEach(threshold => {
-        const yPosition = yAxis.getPixelForValue(threshold.rating);
-        
-        // Only draw if the position is within the chart area
-        if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
-          const img = rankImages[threshold.rating];
-          if (img && img.complete) {
-            // Draw icon on the y-axis
-            ctx.drawImage(img, chartArea.left - 50, yPosition - 10, 20, 20);
-            
-            // Draw the rating text next to the icon
-            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(threshold.rating.toString(), chartArea.left - 55, yPosition + 4);
-            
-            // Draw rank name
-            ctx.fillStyle = 'rgba(156, 163, 175, 0.8)';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.fillText(threshold.name, chartArea.left - 25, yPosition + 4);
-          }
-        }
-      });
-    }
-  };
   // Extract player's rating history from the history snapshots
   const getPlayerHistory = (): PlayerHistoryData[] => {
     const playerHistory: PlayerHistoryData[] = [];
@@ -178,6 +133,45 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
   };
 
   const playerHistory = getPlayerHistory();
+  
+  // Get min and max ratings to determine which rank thresholds the player crossed
+  const ratings = playerHistory.map(entry => entry.rating);
+  const minRating = Math.min(...ratings);
+  const maxRating = Math.max(...ratings);
+  
+  // Find significant rank thresholds that the player's rating range crosses
+  const crossedThresholds = rankThresholds.filter(
+    threshold => threshold.rating >= minRating && threshold.rating <= maxRating + 100
+  );
+
+  // Custom plugin to draw rank icons and ELO values on Y-axis at crossed thresholds
+  const rankIconPlugin = {
+    id: 'rankIcons',
+    afterDraw: (chart: any) => {
+      const ctx = chart.ctx;
+      const yAxis = chart.scales.y;
+      const chartArea = chart.chartArea;
+      
+      crossedThresholds.forEach(threshold => {
+        const yPosition = yAxis.getPixelForValue(threshold.rating);
+        
+        // Only draw if the position is within the chart area
+        if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
+          const img = rankImages[threshold.rating];
+          if (img && img.complete) {
+            // Draw icon to the left of the Y-axis
+            ctx.drawImage(img, chartArea.left - 35, yPosition - 10, 20, 20);
+            
+            // Draw ELO value next to the icon
+            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(threshold.rating.toString(), chartArea.left - 40, yPosition + 4);
+          }
+        }
+      });
+    }
+  };
 
   // Chart.js configuration
   const chartData = {
@@ -208,7 +202,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
     },
     layout: {
       padding: {
-        left: 80, // Extra padding for rank icons and rating text
+        left: 60, // Extra padding for rank icons and ELO values
       },
     },
     plugins: {
@@ -236,7 +230,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
             
             if (context.dataset.label === 'Rating') {
               // Find the rank for this rating
-              const rank = rankThresholds.find(t => entry.rating >= t.rating);
+              const rank = crossedThresholds.find(t => entry.rating >= t.rating);
               const rankName = rank ? rank.name : 'Unranked';
               return [`Rating: ${entry.rating}`, `Rank: ${rankName}`];
             }
@@ -265,15 +259,16 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
           color: 'rgba(75, 85, 99, 0.3)',
         },
         ticks: {
-          color: 'rgba(156, 163, 175, 1)',
+          color: 'rgba(59, 130, 246, 1)',
           font: {
             size: 12,
           },
-          // Show minimal rating ticks, let the rank icons show the important thresholds
+          // Show only crossed rank thresholds and some regular intervals
           callback: function(value: any) {
             const numValue = Number(value);
-            // Show ticks at round hundreds for reference
-            if (numValue % 500 === 0) {
+            // Show crossed thresholds or round numbers
+            const isCrossedThreshold = crossedThresholds.some(t => t.rating === numValue);
+            if (isCrossedThreshold || numValue % 500 === 0) {
               return Math.floor(numValue);
             }
             return '';
@@ -355,7 +350,6 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
                 )}
               </h3>
               <div className="h-80">
-                {/* Chart */}
                 <Line 
                   data={chartData} 
                   options={chartOptions} 
