@@ -94,6 +94,12 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       img.src = threshold.icon;
       img.width = 20;
       img.height = 20;
+      img.onload = () => {
+        console.log(`Image loaded for ${threshold.name}`);
+      };
+      img.onerror = () => {
+        console.error(`Failed to load image for ${threshold.name}:`, threshold.icon);
+      };
       images[threshold.rating] = img;
     });
     return images;
@@ -141,8 +147,15 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
   
   // Find significant rank thresholds that the player's rating range crosses
   const crossedThresholds = rankThresholds.filter(
-    threshold => threshold.rating >= minRating && threshold.rating <= maxRating + 100
+    threshold => {
+      // Include thresholds that are within or near the player's rating range
+      // This ensures we show relevant rank boundaries
+      return threshold.rating <= maxRating + 200 && threshold.rating >= minRating - 200;
+    }
   );
+
+  console.log('Player rating range:', minRating, 'to', maxRating);
+  console.log('Crossed thresholds:', crossedThresholds.map(t => `${t.name}: ${t.rating}`));
 
   // Custom plugin to draw rank icons and ELO values on Y-axis at crossed thresholds
   const rankIconPlugin = {
@@ -152,13 +165,18 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       const yAxis = chart.scales.y;
       const chartArea = chart.chartArea;
       
+      console.log('Drawing rank icons for thresholds:', crossedThresholds.length);
+      
       crossedThresholds.forEach(threshold => {
         const yPosition = yAxis.getPixelForValue(threshold.rating);
+        
+        console.log(`Threshold ${threshold.name} (${threshold.rating}): yPosition=${yPosition}, chartArea.top=${chartArea.top}, chartArea.bottom=${chartArea.bottom}`);
         
         // Only draw if the position is within the chart area
         if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
           const img = rankImages[threshold.rating];
           if (img && img.complete) {
+            console.log(`Drawing icon for ${threshold.name} at position ${yPosition}`);
             // Draw icon to the left of the Y-axis
             ctx.drawImage(img, chartArea.left - 35, yPosition - 10, 20, 20);
             
@@ -167,7 +185,11 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
             ctx.font = '11px sans-serif';
             ctx.textAlign = 'right';
             ctx.fillText(threshold.rating.toString(), chartArea.left - 40, yPosition + 4);
+          } else {
+            console.log(`Image not ready for ${threshold.name}`);
           }
+        } else {
+          console.log(`Threshold ${threshold.name} outside chart area`);
         }
       });
     }
@@ -263,12 +285,11 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
           font: {
             size: 12,
           },
-          // Show only crossed rank thresholds and some regular intervals
+          // Show regular intervals and let the plugin handle rank indicators
           callback: function(value: any) {
             const numValue = Number(value);
-            // Show crossed thresholds or round numbers
-            const isCrossedThreshold = crossedThresholds.some(t => t.rating === numValue);
-            if (isCrossedThreshold || numValue % 500 === 0) {
+            // Show every 200 points for basic reference
+            if (numValue % 200 === 0) {
               return Math.floor(numValue);
             }
             return '';
