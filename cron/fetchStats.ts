@@ -76,7 +76,8 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
     "ETIE#341",
     "G#6",
     "WLDW#280",
-    "ABC#851"
+    "ABC#851",
+    "DRIO#631"
   ];
 };
 
@@ -175,6 +176,7 @@ async function main() {
 }
 
 main();
+
 
 
 
