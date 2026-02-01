@@ -75,7 +75,7 @@ export default function HomePage() {
     <div className="flex min-h-screen p-4 gap-6 justify-center">
       {/* Main content */}
       <div className="flex flex-col items-center max-w-4xl">
-        <img className="h-48" src={ColoradoFlag} alt="colorado flag" />
+        <img className="h-48 hover:scale-105 hover:drop-shadow-2xl transition-all duration-500 ease-out cursor-pointer" src={ColoradoFlag} alt="colorado flag" />
         <h1 className="text-3xl m-4 text-center text-white">
           {settings.title}
         </h1>
@@ -86,7 +86,7 @@ export default function HomePage() {
         {historyData.length > 0 && (
           <button
             onClick={() => setShowHistory(true)}
-            className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:scale-105 hover:shadow-lg transition-all duration-300 ease-out"
           >
             Show History
           </button>
@@ -96,7 +96,7 @@ export default function HomePage() {
         <div className="lg:hidden mb-4">
           <button
             onClick={() => setShowMobileRanks(!showMobileRanks)}
-            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 hover:scale-105 hover:shadow-lg transition-all duration-300 ease-out"
           >
             {showMobileRanks ? 'Hide' : 'Show'} Rank Guide
           </button>

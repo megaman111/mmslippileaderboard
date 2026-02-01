@@ -1,6 +1,7 @@
 import React from 'react';
 import { Player } from '../lib/player';
 import { getRank } from '../lib/ranks';
+import GrandMasterIcon from '../../images/ranks/GrandMaster.svg';
 
 interface HistoryEntry {
   timestamp: number;
@@ -125,33 +126,34 @@ export function GrandmasterThreshold({ players, history }: Props) {
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 w-72 mt-4">
-      <h3 className="text-white text-lg font-bold mb-3 text-center border-b border-gray-600 pb-2">
-        ⚡ GM Threshold
+      <h3 className="text-white text-lg font-bold mb-3 text-center border-b border-gray-600 pb-2 flex items-center justify-center gap-2">
+        <img src={GrandMasterIcon} alt="Grandmaster" className="w-6 h-6" />
+        GM Threshold
       </h3>
       
       <div className="space-y-3">
         {/* Global Estimate */}
-        <div className="bg-gradient-to-r from-yellow-900 to-yellow-800 rounded p-3">
+        <div className="bg-gradient-to-r from-yellow-900 to-yellow-800 rounded p-3 hover:from-yellow-800 hover:to-yellow-700 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ease-out cursor-pointer group">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-yellow-200 font-semibold text-sm">Global Estimate</span>
-            <span className="text-yellow-100 font-bold text-lg">{globalEstimate.estimate}</span>
+            <span className="text-yellow-200 font-semibold text-sm group-hover:text-yellow-100 transition-colors duration-300">Global Estimate</span>
+            <span className="text-yellow-100 font-bold text-lg group-hover:scale-110 transition-transform duration-300 ease-out">{globalEstimate.estimate}</span>
           </div>
-          <div className="text-yellow-300 text-xs">
+          <div className="text-yellow-300 text-xs group-hover:text-yellow-200 transition-colors duration-300">
             {globalEstimate.method}
           </div>
-          <div className="text-yellow-400 text-xs mt-1">
+          <div className="text-yellow-400 text-xs mt-1 group-hover:text-yellow-300 transition-colors duration-300">
             Confidence: {globalEstimate.confidence}
           </div>
         </div>
 
         {/* Local Threshold */}
         {localThreshold && (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-gray-700 rounded p-3 hover:bg-gray-600 hover:scale-[1.02] hover:shadow-md transition-all duration-300 ease-out cursor-pointer group">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-300 font-semibold text-sm">Local Minimum</span>
-              <span className="text-white font-bold text-lg">{localThreshold}</span>
+              <span className="text-gray-300 font-semibold text-sm group-hover:text-gray-200 transition-colors duration-300">Local Minimum</span>
+              <span className="text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300 ease-out">{localThreshold}</span>
             </div>
-            <div className="text-gray-400 text-xs">
+            <div className="text-gray-400 text-xs group-hover:text-gray-300 transition-colors duration-300">
               Lowest GM on this leaderboard ({grandmasters.length} total)
             </div>
           </div>
@@ -159,16 +161,16 @@ export function GrandmasterThreshold({ players, history }: Props) {
 
         {/* Trend */}
         {trend && (
-          <div className="bg-gray-700 rounded p-3">
+          <div className="bg-gray-700 rounded p-3 hover:bg-gray-600 hover:scale-[1.02] hover:shadow-md transition-all duration-300 ease-out cursor-pointer group">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-gray-300 font-semibold text-sm">Recent Trend</span>
+              <span className="text-gray-300 font-semibold text-sm group-hover:text-gray-200 transition-colors duration-300">Recent Trend</span>
               <div className="flex items-center gap-1">
-                {trend.direction === 'up' && <span className="text-red-400">↗️ +{trend.change}</span>}
-                {trend.direction === 'down' && <span className="text-green-400">↘️ -{trend.change}</span>}
-                {trend.direction === 'stable' && <span className="text-blue-400">→ Stable</span>}
+                {trend.direction === 'up' && <span className="text-red-400 group-hover:scale-110 transition-transform duration-300 ease-out">↗️ +{trend.change}</span>}
+                {trend.direction === 'down' && <span className="text-green-400 group-hover:scale-110 transition-transform duration-300 ease-out">↘️ -{trend.change}</span>}
+                {trend.direction === 'stable' && <span className="text-blue-400 group-hover:scale-110 transition-transform duration-300 ease-out">→ Stable</span>}
               </div>
             </div>
-            <div className="text-gray-400 text-xs">
+            <div className="text-gray-400 text-xs group-hover:text-gray-300 transition-colors duration-300">
               {trend.direction === 'up' && 'Threshold increasing (harder to reach GM)'}
               {trend.direction === 'down' && 'Threshold decreasing (easier to reach GM)'}
               {trend.direction === 'stable' && 'Threshold relatively stable'}

@@ -39,19 +39,19 @@ export function RankLegend() {
       <div className="space-y-1.5">
         {/* Main competitive ranks */}
         {rankData.map((rank, index) => (
-          <div key={rank.name} className="flex items-center gap-3 p-2 rounded bg-gray-700 bg-opacity-40 hover:bg-opacity-60 transition-colors">
+          <div key={rank.name} className="flex items-center gap-3 p-2 rounded bg-gray-700 bg-opacity-40 hover:bg-opacity-60 hover:scale-[1.02] hover:shadow-md transition-all duration-300 ease-out cursor-pointer group">
             {rank.icon && (
               <img 
                 src={rank.icon} 
                 alt={rank.name}
-                className="w-7 h-7 flex-shrink-0"
+                className="w-7 h-7 flex-shrink-0 group-hover:scale-110 group-hover:drop-shadow-lg transition-all duration-300 ease-out"
               />
             )}
             <div className="flex-1 min-w-0">
-              <div className="text-white font-medium text-sm">
+              <div className="text-white font-medium text-sm group-hover:text-gray-100 transition-colors duration-300">
                 {rank.name}
               </div>
-              <div className="text-gray-300 text-xs">
+              <div className="text-gray-300 text-xs group-hover:text-gray-200 transition-colors duration-300">
                 {rank.range}
               </div>
             </div>
@@ -63,19 +63,19 @@ export function RankLegend() {
         
         {/* Special ranks */}
         {specialRanks.map((rank) => (
-          <div key={rank.name} className="flex items-center gap-3 p-2 rounded bg-gray-700 bg-opacity-25">
+          <div key={rank.name} className="flex items-center gap-3 p-2 rounded bg-gray-700 bg-opacity-25 hover:bg-opacity-40 hover:scale-[1.01] transition-all duration-300 ease-out cursor-pointer group">
             {rank.icon && (
               <img 
                 src={rank.icon} 
                 alt={rank.name}
-                className="w-7 h-7 flex-shrink-0 opacity-75"
+                className="w-7 h-7 flex-shrink-0 opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-300 ease-out"
               />
             )}
             <div className="flex-1 min-w-0">
-              <div className="text-gray-400 font-medium text-sm">
+              <div className="text-gray-400 font-medium text-sm group-hover:text-gray-300 transition-colors duration-300">
                 {rank.name}
               </div>
-              <div className="text-gray-500 text-xs">
+              <div className="text-gray-500 text-xs group-hover:text-gray-400 transition-colors duration-300">
                 {rank.range}
               </div>
             </div>
