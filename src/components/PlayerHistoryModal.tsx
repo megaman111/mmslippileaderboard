@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,27 +11,6 @@ import {
 import { Line } from 'react-chartjs-2';
 import { Player } from '../lib/player';
 import dayjs from 'dayjs';
-
-// Import rank icons
-import GrandMasterIcon from '../../images/ranks/GrandMaster.svg';
-import Master1Icon from '../../images/ranks/MasterI.svg';
-import Master2Icon from '../../images/ranks/MasterII.svg';
-import Master3Icon from '../../images/ranks/MasterIII.svg';
-import Diamond1Icon from '../../images/ranks/DiamondI.svg';
-import Diamond2Icon from '../../images/ranks/DiamondII.svg';
-import Diamond3Icon from '../../images/ranks/DiamondIII.svg';
-import Platinum3Icon from '../../images/ranks/PlatinumIII.svg';
-import Platinum2Icon from '../../images/ranks/PlatinumII.svg';
-import Platinum1Icon from '../../images/ranks/PlatinumI.svg';
-import Gold3Icon from '../../images/ranks/GoldIII.svg';
-import Gold2Icon from '../../images/ranks/GoldII.svg';
-import Gold1Icon from '../../images/ranks/GoldI.svg';
-import Silver3Icon from '../../images/ranks/SilverIII.svg';
-import Silver2Icon from '../../images/ranks/SilverII.svg';
-import Silver1Icon from '../../images/ranks/SilverI.svg';
-import Bronze3Icon from '../../images/ranks/BronzeIII.svg';
-import Bronze2Icon from '../../images/ranks/BronzeII.svg';
-import Bronze1Icon from '../../images/ranks/BronzeI.svg';
 
 ChartJS.register(
   CategoryScale,
@@ -63,48 +41,6 @@ interface Props {
 }
 
 export function PlayerHistoryModal({ player, history, onClose }: Props) {
-  // Define rank thresholds with their icons for Y-axis (using correct ratings)
-  const rankThresholds = [
-    { rating: 0, name: 'Bronze I', icon: Bronze1Icon },
-    { rating: 766, name: 'Bronze II', icon: Bronze2Icon },
-    { rating: 914, name: 'Bronze III', icon: Bronze3Icon },
-    { rating: 1055, name: 'Silver I', icon: Silver1Icon },
-    { rating: 1189, name: 'Silver II', icon: Silver2Icon },
-    { rating: 1316, name: 'Silver III', icon: Silver3Icon },
-    { rating: 1436, name: 'Gold I', icon: Gold1Icon },
-    { rating: 1549, name: 'Gold II', icon: Gold2Icon },
-    { rating: 1654, name: 'Gold III', icon: Gold3Icon },
-    { rating: 1752, name: 'Platinum I', icon: Platinum1Icon },
-    { rating: 1843, name: 'Platinum II', icon: Platinum2Icon },
-    { rating: 1928, name: 'Platinum III', icon: Platinum3Icon },
-    { rating: 2004, name: 'Diamond I', icon: Diamond1Icon },
-    { rating: 2074, name: 'Diamond II', icon: Diamond2Icon },
-    { rating: 2137, name: 'Diamond III', icon: Diamond3Icon },
-    { rating: 2192, name: 'Master I', icon: Master1Icon },
-    { rating: 2275, name: 'Master II', icon: Master2Icon },
-    { rating: 2350, name: 'Master III', icon: Master3Icon },
-    { rating: 2500, name: 'Grandmaster', icon: GrandMasterIcon }, // Grandmaster threshold (top 300 + over Master I)
-  ];
-
-  // Create images for rank icons
-  const rankImages = React.useMemo(() => {
-    const images: { [key: number]: HTMLImageElement } = {};
-    rankThresholds.forEach(threshold => {
-      const img = new Image();
-      img.src = threshold.icon;
-      img.width = 20;
-      img.height = 20;
-      img.onload = () => {
-        console.log(`Image loaded for ${threshold.name}`);
-      };
-      img.onerror = () => {
-        console.error(`Failed to load image for ${threshold.name}:`, threshold.icon);
-      };
-      images[threshold.rating] = img;
-    });
-    return images;
-  }, []);
-
   // Extract player's rating history from the history snapshots
   const getPlayerHistory = (): PlayerHistoryData[] => {
     const playerHistory: PlayerHistoryData[] = [];
@@ -140,61 +76,6 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
 
   const playerHistory = getPlayerHistory();
   
-  // Get min and max ratings to determine which rank thresholds the player crossed
-  const ratings = playerHistory.map(entry => entry.rating);
-  const minRating = Math.min(...ratings);
-  const maxRating = Math.max(...ratings);
-  
-  // Find significant rank thresholds that the player's rating range crosses
-  const crossedThresholds = rankThresholds.filter(
-    threshold => {
-      // Include thresholds that are within or near the player's rating range
-      // This ensures we show relevant rank boundaries
-      return threshold.rating <= maxRating + 200 && threshold.rating >= minRating - 200;
-    }
-  );
-
-  console.log('Player rating range:', minRating, 'to', maxRating);
-  console.log('Crossed thresholds:', crossedThresholds.map(t => `${t.name}: ${t.rating}`));
-
-  // Custom plugin to draw rank icons and ELO values on Y-axis at crossed thresholds
-  const rankIconPlugin = {
-    id: 'rankIcons',
-    afterDraw: (chart: any) => {
-      const ctx = chart.ctx;
-      const yAxis = chart.scales.y;
-      const chartArea = chart.chartArea;
-      
-      console.log('Drawing rank icons for thresholds:', crossedThresholds.length);
-      
-      crossedThresholds.forEach(threshold => {
-        const yPosition = yAxis.getPixelForValue(threshold.rating);
-        
-        console.log(`Threshold ${threshold.name} (${threshold.rating}): yPosition=${yPosition}, chartArea.top=${chartArea.top}, chartArea.bottom=${chartArea.bottom}`);
-        
-        // Only draw if the position is within the chart area
-        if (yPosition >= chartArea.top && yPosition <= chartArea.bottom) {
-          const img = rankImages[threshold.rating];
-          if (img && img.complete) {
-            console.log(`Drawing icon for ${threshold.name} at position ${yPosition}`);
-            // Draw icon to the left of the Y-axis
-            ctx.drawImage(img, chartArea.left - 35, yPosition - 10, 20, 20);
-            
-            // Draw ELO value next to the icon
-            ctx.fillStyle = 'rgba(156, 163, 175, 1)';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(threshold.rating.toString(), chartArea.left - 40, yPosition + 4);
-          } else {
-            console.log(`Image not ready for ${threshold.name}`);
-          }
-        } else {
-          console.log(`Threshold ${threshold.name} outside chart area`);
-        }
-      });
-    }
-  };
-
   // Chart.js configuration
   const chartData = {
     labels: playerHistory.map(entry => entry.date),
@@ -222,11 +103,6 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       mode: 'index' as const,
       intersect: false,
     },
-    layout: {
-      padding: {
-        left: 60, // Extra padding for rank icons and ELO values
-      },
-    },
     plugins: {
       legend: {
         display: true,
@@ -251,10 +127,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
             const entry = playerHistory[dataIndex];
             
             if (context.dataset.label === 'Rating') {
-              // Find the rank for this rating
-              const rank = crossedThresholds.find(t => entry.rating >= t.rating);
-              const rankName = rank ? rank.name : 'Unranked';
-              return [`Rating: ${entry.rating}`, `Rank: ${rankName}`];
+              return `Rating: ${entry.rating}`;
             }
             return '';
           },
@@ -373,8 +246,7 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
               <div className="h-80">
                 <Line 
                   data={chartData} 
-                  options={chartOptions} 
-                  plugins={[rankIconPlugin]}
+                  options={chartOptions}
                 />
               </div>
             </div>
