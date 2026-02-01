@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table } from '../../Table';
 import { RankLegend } from '../../RankLegend';
 import { GrandmasterThreshold } from '../../GrandmasterThreshold';
+import { FreeRankedDay } from '../../FreeRankedDay';
 import { Player } from '../../../lib/player'
 import playersOld from '../../../../cron/data/players-old.json';
 import playersNew from '../../../../cron/data/players-new.json';
@@ -73,6 +74,13 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen p-4 gap-6 justify-center">
+      {/* Left sidebar with GM threshold */}
+      <div className="hidden lg:block flex-shrink-0">
+        <div className="sticky top-4">
+          <GrandmasterThreshold players={players} history={historyData} />
+        </div>
+      </div>
+      
       {/* Main content */}
       <div className="flex flex-col items-center max-w-4xl">
         <img className="h-48 hover:scale-105 hover:drop-shadow-2xl transition-all duration-500 ease-out cursor-pointer" src={ColoradoFlag} alt="colorado flag" />
@@ -92,18 +100,19 @@ export default function HomePage() {
           </button>
         )}
         
-        {/* Mobile rank legend toggle */}
+        {/* Mobile components toggle */}
         <div className="lg:hidden mb-4">
           <button
             onClick={() => setShowMobileRanks(!showMobileRanks)}
             className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 hover:scale-105 hover:shadow-lg transition-all duration-300 ease-out"
           >
-            {showMobileRanks ? 'Hide' : 'Show'} Rank Guide
+            {showMobileRanks ? 'Hide' : 'Show'} Info Panels
           </button>
           {showMobileRanks && (
             <div className="mt-4 space-y-4">
-              <RankLegend />
               <GrandmasterThreshold players={players} history={historyData} />
+              <RankLegend />
+              <FreeRankedDay />
             </div>
           )}
         </div>
@@ -120,11 +129,11 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Right sidebar with rank legend */}
+      {/* Right sidebar with rank legend and free ranked day */}
       <div className="hidden lg:block flex-shrink-0">
         <div className="sticky top-4 space-y-4">
           <RankLegend />
-          <GrandmasterThreshold players={players} history={historyData} />
+          <FreeRankedDay />
         </div>
       </div>
     </div>
