@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table } from '../../Table';
+import { RankLegend } from '../../RankLegend';
+import { GrandmasterThreshold } from '../../GrandmasterThreshold';
 import { Player } from '../../../lib/player'
 import playersOld from '../../../../cron/data/players-old.json';
 import playersNew from '../../../../cron/data/players-new.json';
@@ -40,6 +42,7 @@ export default function HomePage() {
   console.log(playersOld);
 
   const [showHistory, setShowHistory] = useState(false);
+  const [showMobileRanks, setShowMobileRanks] = useState(false);
 
   const rankedPlayersOld = sortAndPopulatePlayers(playersOld)
   const oldPlayersMap = new Map(
@@ -69,31 +72,59 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col items-center h-screen p-8">
-      <img className="h-48" src={ColoradoFlag} alt="colorado flag" />
-      <h1 className="text-3xl m-4 text-center text-white">
-        {settings.title}
-      </h1>
-      <div className="p-1 text-gray-300"> Updated {updateDesc}</div>
-      <div className="text-xs text-gray-400 mb-2">
-        📈 Click on player names to view their rating history over time
+    <div className="flex min-h-screen p-4 gap-6 justify-center">
+      {/* Main content */}
+      <div className="flex flex-col items-center max-w-4xl">
+        <img className="h-48" src={ColoradoFlag} alt="colorado flag" />
+        <h1 className="text-3xl m-4 text-center text-white">
+          {settings.title}
+        </h1>
+        <div className="p-1 text-gray-300"> Updated {updateDesc}</div>
+        <div className="text-xs text-gray-400 mb-2">
+          📈 Click on player names to view their rating history over time
+        </div>
+        {historyData.length > 0 && (
+          <button
+            onClick={() => setShowHistory(true)}
+            className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Show History
+          </button>
+        )}
+        
+        {/* Mobile rank legend toggle */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setShowMobileRanks(!showMobileRanks)}
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+          >
+            {showMobileRanks ? 'Hide' : 'Show'} Rank Guide
+          </button>
+          {showMobileRanks && (
+            <div className="mt-4 space-y-4">
+              <RankLegend />
+              <GrandmasterThreshold players={players} history={historyData} />
+            </div>
+          )}
+        </div>
+        
+        <Table players={players} history={historyData} />
+        <div className="p-4 text-gray-300 flex flex-col text-center">
+          <div>Built by blorppppp, maintained by mmunder</div>
+          <div>
+            <a href="https://www.buymeacoffee.com/blorppppp" target="_blank" rel="noreferrer"
+               className="text-gray-400 hover:text-indigo-700 mr-2 hover:underline">
+              Buy blorpppp a coffee
+            </a>☕
+          </div>
+        </div>
       </div>
-      {historyData.length > 0 && (
-        <button
-          onClick={() => setShowHistory(true)}
-          className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          Show History
-        </button>
-      )}
-      <Table players={players} history={historyData} />
-      <div className="p-4 text-gray-300 flex flex-col">
-        <div>Built by blorppppp, maintained by mmunder</div>
-        <div>
-          <a href="https://www.buymeacoffee.com/blorppppp" target="_blank" rel="noreferrer"
-             className="text-gray-400 hover:text-indigo-700 mr-2 hover:underline">
-            Buy blorpppp a coffee
-          </a>☕
+      
+      {/* Right sidebar with rank legend */}
+      <div className="hidden lg:block flex-shrink-0">
+        <div className="sticky top-4 space-y-4">
+          <RankLegend />
+          <GrandmasterThreshold players={players} history={historyData} />
         </div>
       </div>
     </div>

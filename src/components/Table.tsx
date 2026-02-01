@@ -32,7 +32,7 @@ export function Table({ players, history }: Props) {
       </thead>
       {players.length > 0 &&
         <tbody>
-          {players.map((p: Player, index: number) => <Row key={p.displayName} player={p} history={history} isFirstPlace={index === 0} />)}
+          {players.map((p: Player, index: number) => <Row key={p.displayName} player={p} history={history} playerRank={index + 1} />)}
         </tbody>
       }
     </table>

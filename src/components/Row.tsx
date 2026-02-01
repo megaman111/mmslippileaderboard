@@ -12,10 +12,10 @@ interface HistoryEntry {
 interface Props {
   player: Player;
   history?: HistoryEntry[];
-  isFirstPlace?: boolean;
+  playerRank?: number; // 1 for first, 2 for second, 3 for third, etc.
 }
 
-export function Row({ player, history, isFirstPlace }: Props) {
+export function Row({ player, history, playerRank }: Props) {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const codeToId = (code: string) => {
@@ -56,26 +56,53 @@ export function Row({ player, history, isFirstPlace }: Props) {
     return Math.floor(player.rankedNetplayProfile.ratingOrdinal - player.oldRankedNetplayProfile.ratingOrdinal);
   }
 
-  const playerRank = getRank(player);
-  const isActive = playerRank.name !== 'None';
+  const playerRankData = getRank(player);
+  const isActive = playerRankData.name !== 'None';
   const totalSets = player.rankedNetplayProfile.wins + player.rankedNetplayProfile.losses;
   const totalGames = (player.rankedNetplayProfile.characters || []).reduce((acc, val)=> acc + val.gameCount, 0);
   const rankChange = getRankChange(player);
   const ratingChange = getRatingChange(player);
-  const isGrandmaster = playerRank.name === 'Grandmaster';
+  const isGrandmaster = playerRankData.name === 'Grandmaster';
   const globalRank = player.rankedNetplayProfile.dailyGlobalPlacement;
   const regionalRank = player.rankedNetplayProfile.dailyRegionalPlacement;
   
-  // Special styling for MM#391 and #1 player
+  // Special styling for MM#391 and podium positions
   const isMyCode = player.connectCode.code === 'MM#391';
-  const specialGlow = isMyCode ? 'shadow-[0_0_20px_rgba(59,130,246,0.8)] border-2 border-blue-400' : 
-                     isFirstPlace ? 'shadow-[0_0_20px_rgba(255,215,0,0.8)] border-2 border-yellow-400' : '';
-  const nameGlow = isMyCode ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] font-bold' : 
-                   isFirstPlace ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)] font-bold' : 'text-gray-300';
+  const isFirstPlace = playerRank === 1;
+  const isSecondPlace = playerRank === 2;
+  const isThirdPlace = playerRank === 3;
+  
+  const getSpecialGlow = () => {
+    if (isMyCode) return 'shadow-[0_0_20px_rgba(59,130,246,0.8)] border-2 border-blue-400';
+    if (isFirstPlace) return 'shadow-[0_0_20px_rgba(255,215,0,0.8)] border-2 border-yellow-400';
+    if (isSecondPlace) return 'shadow-[0_0_20px_rgba(192,192,192,0.8)] border-2 border-gray-300';
+    if (isThirdPlace) return 'shadow-[0_0_20px_rgba(205,127,50,0.8)] border-2 border-orange-600';
+    return '';
+  };
+  
+  const getNameGlow = () => {
+    if (isMyCode) return 'text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] font-bold';
+    if (isFirstPlace) return 'text-yellow-400 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)] font-bold';
+    if (isSecondPlace) return 'text-gray-300 drop-shadow-[0_0_8px_rgba(192,192,192,0.8)] font-bold';
+    if (isThirdPlace) return 'text-orange-400 drop-shadow-[0_0_8px_rgba(205,127,50,0.8)] font-bold';
+    return 'text-gray-300';
+  };
+  
+  const getCodeGlow = () => {
+    if (isMyCode) return 'text-blue-300 font-semibold';
+    if (isFirstPlace) return 'text-yellow-300 font-semibold';
+    if (isSecondPlace) return 'text-gray-200 font-semibold';
+    if (isThirdPlace) return 'text-orange-300 font-semibold';
+    return 'text-gray-300';
+  };
+  
+  const specialGlow = getSpecialGlow();
+  const nameGlow = getNameGlow();
+  const codeGlow = getCodeGlow();
 
   return (
     <>
-      <tr className={`${playerRank.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600 ${!showHistoryModal ? 'hover:bg-opacity-80 hover:brightness-110 transition-all duration-200' : ''} cursor-pointer ${specialGlow}`} >
+      <tr className={`${playerRankData.bgClass} border-separate border-spacing-2 border-b-2 border-gray-600 ${!showHistoryModal ? 'hover:bg-opacity-80 hover:brightness-110 transition-all duration-200' : ''} cursor-pointer ${specialGlow}`} >
         <td className="md:text-2xl text-gray-300 md:px-6 md:py-4 md:p-1 whitespace-nowrap">
           <div>{isActive && `#${player.rankedNetplayProfile.rank}`}</div>
           {Boolean(rankChange) && changeArrow(rankChange)} </td>
@@ -101,7 +128,7 @@ export function Row({ player, history, isFirstPlace }: Props) {
               </span>
             )}
           </div>
-          <div className={`text-xs ${isMyCode ? 'text-blue-300 font-semibold' : isFirstPlace ? 'text-yellow-300 font-semibold' : 'text-gray-300'}`}>{player.connectCode.code}</div>
+          <div className={`text-xs ${codeGlow}`}>{player.connectCode.code}</div>
           <a 
             href={codeToUrlSlug(player.connectCode.code)} 
             target="_blank" 
@@ -113,11 +140,11 @@ export function Row({ player, history, isFirstPlace }: Props) {
         </td>
         <td className="md:text-xl text-sm text-gray-900 md:px-6 md:py-4 p-1 whitespace-nowrap text-center">
 
-          {playerRank.iconUrl && <div className="flex items-center justify-center">
-            <img className="md:h-10 md:w-10 h-6 w-6 drop-shadow" src={playerRank.iconUrl} />
+          {playerRankData.iconUrl && <div className="flex items-center justify-center">
+            <img className="md:h-10 md:w-10 h-6 w-6 drop-shadow" src={playerRankData.iconUrl} />
           </div>}
           <div className="md:text-lg text-xs max-w-xs text-gray-300 uppercase">
-            {playerRank.name}
+            {playerRankData.name}
           </div>
           <div className="text-gray-300 md:text-sm text-xs">
             {isActive && Math.floor(player.rankedNetplayProfile.ratingOrdinal)}
