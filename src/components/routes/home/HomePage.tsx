@@ -3,6 +3,7 @@ import { Table } from '../../Table';
 import { RankLegend } from '../../RankLegend';
 import { GrandmasterThreshold } from '../../GrandmasterThreshold';
 import { BiggestMovers } from '../../BiggestMovers';
+import { TiltQueue } from '../../TiltQueue';
 import { FreeRankedDay } from '../../FreeRankedDay';
 import { Player } from '../../../lib/player'
 import playersOld from '../../../../cron/data/players-old.json';
@@ -80,6 +81,7 @@ export default function HomePage() {
         <div className="sticky top-4 space-y-4">
           <GrandmasterThreshold players={players} history={historyData} />
           <BiggestMovers players={players} history={historyData} />
+          <TiltQueue players={players} history={historyData} />
         </div>
       </div>
       
@@ -114,6 +116,7 @@ export default function HomePage() {
             <div className="mt-4 space-y-4">
               <GrandmasterThreshold players={players} history={historyData} />
               <BiggestMovers players={players} history={historyData} />
+              <TiltQueue players={players} history={historyData} />
               <RankLegend />
               <FreeRankedDay />
             </div>

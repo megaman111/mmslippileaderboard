@@ -84,7 +84,8 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
     "DESU#843",
     "SLOW#189",
     "LATI#991",
-    "AXE#845"
+    "AXE#845",
+    "SUID#571"
   ];
 };
 
@@ -183,6 +184,7 @@ async function main() {
 }
 
 main();
+
 
 
 
