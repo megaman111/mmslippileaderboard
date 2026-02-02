@@ -77,7 +77,14 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
     "G#6",
     "WLDW#280",
     "ABC#851",
-    "DRIO#631"
+    "DRIO#631",
+    "PORK#582",
+    "RUSS#946",
+    "JAMS#799",
+    "DESU#843",
+    "SLOW#189",
+    "LATI#991",
+    "AXE#845"
   ];
 };
 
@@ -176,6 +183,13 @@ async function main() {
 }
 
 main();
+
+
+
+
+
+
+
 
 
 

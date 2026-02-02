@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table } from '../../Table';
 import { RankLegend } from '../../RankLegend';
 import { GrandmasterThreshold } from '../../GrandmasterThreshold';
+import { BiggestMovers } from '../../BiggestMovers';
 import { FreeRankedDay } from '../../FreeRankedDay';
 import { Player } from '../../../lib/player'
 import playersOld from '../../../../cron/data/players-old.json';
@@ -74,10 +75,11 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-screen p-4 gap-6 justify-center">
-      {/* Left sidebar with GM threshold */}
+      {/* Left sidebar with GM threshold and biggest movers */}
       <div className="hidden lg:block flex-shrink-0">
-        <div className="sticky top-4">
+        <div className="sticky top-4 space-y-4">
           <GrandmasterThreshold players={players} history={historyData} />
+          <BiggestMovers players={players} history={historyData} />
         </div>
       </div>
       
@@ -111,6 +113,7 @@ export default function HomePage() {
           {showMobileRanks && (
             <div className="mt-4 space-y-4">
               <GrandmasterThreshold players={players} history={historyData} />
+              <BiggestMovers players={players} history={historyData} />
               <RankLegend />
               <FreeRankedDay />
             </div>
