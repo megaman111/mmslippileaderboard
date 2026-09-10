@@ -85,7 +85,15 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
     "SLOW#189",
     "LATI#991",
     "AXE#845",
-    "SUID#571"
+    "SUID#571",
+    "SDJ#613",
+    "HULK#486",
+    "GXM#682",
+    "UMBR#115",
+    "GWM#420",
+    "ICEM#395",
+    "GUESS#05",
+    "BATT#489"
   ];
 };
 
@@ -97,7 +105,20 @@ const getPlayers = async () => {
   const validResults = results.filter(result => !(result instanceof Error));
   const unsortedPlayers = validResults
     .filter((data: any) => data.data.getUser)
-    .map((data: any) => data.data.getUser);
+    .map((data: any) => {
+      const user = data.data.getUser;
+      // Extract continent from ranked profile
+      const continent = user.rankedNetplayProfile?.continent ?? null;
+      // Extract subscription level
+      const subscriptionLevel = user.activeSubscription?.level ?? null;
+      return {
+        displayName: user.displayName,
+        connectCode: user.connectCode,
+        rankedNetplayProfile: user.rankedNetplayProfile,
+        continent,
+        subscriptionLevel,
+      };
+    });
   return unsortedPlayers.sort((p1, p2) =>
     p2.rankedNetplayProfile.ratingOrdinal - p1.rankedNetplayProfile.ratingOrdinal)
 }
@@ -138,9 +159,8 @@ async function main() {
       timestamp: now,
       players: currentPlayers
     });
-    // Keep only last 90 days of history (or adjust as needed)
-    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
-    history = history.filter(entry => entry.timestamp > ninetyDaysAgo);
+    // Keep all history until manual reset (no time-based filtering)
+    // History will persist across the entire season
     // Sort by timestamp descending (newest first)
     history.sort((a, b) => b.timestamp - a.timestamp);
   } catch (e) {
@@ -158,9 +178,8 @@ async function main() {
     timestamp: now,
     players: players
   });
-  // Keep only last 90 days of history (or adjust as needed)
-  const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
-  history = history.filter(entry => entry.timestamp > ninetyDaysAgo);
+  // Keep all history until manual reset (no time-based filtering)
+  // History will persist across the entire season
   // Sort by timestamp descending (newest first)
   history.sort((a, b) => b.timestamp - a.timestamp);
   
@@ -184,6 +203,14 @@ async function main() {
 }
 
 main();
+
+
+
+
+
+
+
+
 
 
 

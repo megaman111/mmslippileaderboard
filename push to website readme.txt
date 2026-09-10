@@ -15,6 +15,15 @@ Make sure you are in the directory C:\Users\jojog\Desktop\WebDev\Slippi Leaderbo
 git add .  
 git commit -m ":)"
 
+HISTORY TRACKING:
+The leaderboard now tracks player rating history indefinitely across the entire season.
+History snapshots are saved every time you run 'yarn fetch-stats' or 'npm run update-and-deploy'.
+
+When a new Slippi ranked season starts, reset the historical data:
+   npm run reset-season
+
+This will create a backup and clear history to start fresh for the new season.
+
 AUTOMATIC UPDATES (NEW!):
 Set up automatic updates every 30 minutes while your computer is on:
 

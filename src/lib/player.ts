@@ -11,6 +11,7 @@ interface RankedNetplayProfile {
   losses: number;
   dailyGlobalPlacement: number | null;
   dailyRegionalPlacement: number | null;
+  continent: string | null;
   characters: CharacterStats[];
 }
 
@@ -19,6 +20,8 @@ export interface Player {
   connectCode: {
     code: string;
   };
-  rankedNetplayProfile: RankedNetplayProfile
-  oldRankedNetplayProfile?: RankedNetplayProfile // populated separately
+  rankedNetplayProfile: RankedNetplayProfile;
+  oldRankedNetplayProfile?: RankedNetplayProfile; // populated separately
+  continent?: string | null;
+  subscriptionLevel?: string | null;
 }

@@ -16,7 +16,8 @@
     "check-auto-update": "powershell -ExecutionPolicy Bypass -File check-auto-update.ps1",
     "test-auto-update": "powershell -ExecutionPolicy Bypass -File auto-update-daemon.ps1 -RunOnce",
     "manager": "powershell -ExecutionPolicy Bypass -File simple-manager.ps1",
-    "manager-gui": "powershell -ExecutionPolicy Bypass -File leaderboard-manager.ps1 -Action gui"
+    "manager-gui": "powershell -ExecutionPolicy Bypass -File leaderboard-manager.ps1 -Action gui",
+    "reset-season": "powershell -ExecutionPolicy Bypass -File reset-season-history.ps1"
   },
   "repository": {
     "type": "git",

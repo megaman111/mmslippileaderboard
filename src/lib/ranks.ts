@@ -70,7 +70,8 @@ class StandardRank implements Rank {
     if(setCount(player) < MIN_RANK_SETS) {
       return false
     }
-    const rating = Math.floor(100 * player.rankedNetplayProfile.ratingOrdinal) / 100; // ensure rating doesn't fall between two bounds
+    // Use floor to ensure rating always falls within a rank boundary
+    const rating = Math.floor(player.rankedNetplayProfile.ratingOrdinal);
     return this.lowerBound <= rating && rating <= this.upperBound;
   }
 }
@@ -115,9 +116,9 @@ export const RANKS = [
   new StandardRank('Platinum III', 1928, 2003, SKY_BG, Platinum3Icon),
   new StandardRank('Diamond I', 2004, 2073, BLUE_BG, Diamond1Icon),
   new StandardRank('Diamond II', 2074, 2136, BLUE_BG, Diamond2Icon),
-  new StandardRank('Diamond III', 2137, 2191, BLUE_BG, Diamond3Icon),
-  new StandardRank('Master I', 2192, 2274, INDIGO_BG, Master1Icon),
-  new StandardRank('Master II', 2275, 2349, INDIGO_BG, Master2Icon),
+  new StandardRank('Diamond III', 2137, 2190, BLUE_BG, Diamond3Icon),
+  new StandardRank('Master I', 2191, 2273, INDIGO_BG, Master1Icon),
+  new StandardRank('Master II', 2274, 2349, INDIGO_BG, Master2Icon),
   new StandardRank('Master III', 2350, Infinity, INDIGO_BG, Master3Icon),
   new GrandMaster()
 ]

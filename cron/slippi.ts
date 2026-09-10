@@ -1,5 +1,9 @@
 import { RateLimiter } from "limiter"
 
+// Upgraded query — adds continent, status, and activeSubscription
+// Note: netplayProfiles (season history) and getConnectCode are NOT available
+// on the internal.slippi.gg endpoint — those only work on the gateway endpoint
+// which requires auth context from the Slippi launcher/friendlies app.
 export const getPlayerData = async (connectCode: string) => {
   const query = `fragment profileFields on NetplayProfile {
   id
@@ -23,6 +27,12 @@ fragment userProfilePage on User {
   displayName
   connectCode {
     code
+    __typename
+  }
+  status
+  activeSubscription {
+    level
+    hasGiftSub
     __typename
   }
   rankedNetplayProfile {

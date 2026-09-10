@@ -3,6 +3,7 @@ import { Player } from '../lib/player'
 import { getRank } from '../lib/ranks'
 import { Characters } from './Characters'
 import { PlayerHistoryModal } from './PlayerHistoryModal'
+import { getContinentDisplay } from '../lib/continents'
 
 interface HistoryEntry {
   timestamp: number;
@@ -99,6 +100,8 @@ export function Row({ player, history, playerRank }: Props) {
   const specialGlow = getSpecialGlow();
   const nameGlow = getNameGlow();
   const codeGlow = getCodeGlow();
+  const continentInfo = getContinentDisplay(player.continent ?? player.rankedNetplayProfile.continent);
+  const hasSubscription = player.subscriptionLevel && player.subscriptionLevel !== 'NONE';
 
   return (
     <>
@@ -128,7 +131,19 @@ export function Row({ player, history, playerRank }: Props) {
               </span>
             )}
           </div>
-          <div className={`text-xs ${codeGlow}`}>{player.connectCode.code}</div>
+          <div className={`text-xs ${codeGlow}`}>
+            {player.connectCode.code}
+            {continentInfo && (
+              <span className="ml-1 text-gray-400" title={continentInfo.label}>
+                {continentInfo.flag} {continentInfo.label}
+              </span>
+            )}
+            {hasSubscription && (
+              <span className="ml-1 text-yellow-500" title={`Slippi Supporter (${player.subscriptionLevel})`}>
+                ⭐
+              </span>
+            )}
+          </div>
           <a 
             href={codeToUrlSlug(player.connectCode.code)} 
             target="_blank" 
