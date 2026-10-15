@@ -81,14 +81,18 @@ class GrandMaster extends StandardRank {
     super('Grandmaster', 2192, Infinity, "bg-slate-900", GrandMasterIcon)
   }
 
+  // Mirrors slippi.gg: rating >= 2191.75 AND a daily global or regional placement.
+  // Slippi only hands out a placement to players in the daily GM snapshot
+  // (global top 300, or the top of a region), so a non-null placement == GM.
   isRank(player: Player) {
-    const hasRating = super.isRank(player);
-    if(!hasRating) {
+    if(setCount(player) < MIN_RANK_SETS) {
       return false;
     }
-    // Grandmaster requires being in top 300 (global or regional placement) AND over Master I rating (2192)
-    return (player.rankedNetplayProfile.dailyGlobalPlacement !== null && player.rankedNetplayProfile.dailyGlobalPlacement <= 300)
-      || (player.rankedNetplayProfile.dailyRegionalPlacement !== null && player.rankedNetplayProfile.dailyRegionalPlacement <= 300);
+    const profile = player.rankedNetplayProfile;
+    if(profile.ratingOrdinal < 2191.75) {
+      return false;
+    }
+    return Boolean(profile.dailyGlobalPlacement) || Boolean(profile.dailyRegionalPlacement);
   }
 }
 

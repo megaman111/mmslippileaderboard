@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table } from '../../Table';
 import { RankLegend } from '../../RankLegend';
-import { GrandmasterThreshold } from '../../GrandmasterThreshold';
+import { GrandmasterThreshold, GmThresholdData } from '../../GrandmasterThreshold';
 import { BiggestMovers } from '../../BiggestMovers';
 import { TiltQueue } from '../../TiltQueue';
 import { FreeRankedDay } from '../../FreeRankedDay';
@@ -9,6 +9,9 @@ import { Player } from '../../../lib/player'
 import playersOld from '../../../../cron/data/players-old.json';
 import playersNew from '../../../../cron/data/players-new.json';
 import timestamp from '../../../../cron/data/timestamp.json';
+// Written by cron/gmTracker.ts on every stats update
+import gmThresholdJson from '../../../../cron/data/gm-threshold.json';
+const gmData = (gmThresholdJson && (gmThresholdJson as any).slots ? gmThresholdJson : null) as GmThresholdData | null;
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime' // import plugin
 import * as settings from '../../../../settings'
@@ -79,7 +82,7 @@ export default function HomePage() {
       {/* Left sidebar with GM threshold and biggest movers */}
       <div className="hidden lg:block flex-shrink-0">
         <div className="sticky top-4 space-y-4">
-          <GrandmasterThreshold players={players} history={historyData} />
+          <GrandmasterThreshold players={players} gmData={gmData} />
           <BiggestMovers players={players} history={historyData} />
           <TiltQueue players={players} history={historyData} />
         </div>
@@ -114,7 +117,7 @@ export default function HomePage() {
           </button>
           {showMobileRanks && (
             <div className="mt-4 space-y-4">
-              <GrandmasterThreshold players={players} history={historyData} />
+              <GrandmasterThreshold players={players} gmData={gmData} />
               <BiggestMovers players={players} history={historyData} />
               <TiltQueue players={players} history={historyData} />
               <RankLegend />

@@ -7,6 +7,9 @@ mkdir -p cron/data
 if [ ! -f cron/data/players-new.json ]; then
   echo '[]' >> cron/data/players-new.json
 fi
+if [ ! -f cron/data/gm-threshold.json ]; then
+  echo 'null' > cron/data/gm-threshold.json
+fi
 mkdir -p cron/logs
 if [ ! -f cron/logs/log.txt ]; then
   touch cron/logs/log.txt

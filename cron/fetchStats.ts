@@ -1,4 +1,5 @@
 ﻿import { getPlayerDataThrottled } from './slippi'
+import { updateGmTracker, ensureThresholdFile } from './gmTracker'
 // import { GoogleSpreadsheet } from 'google-spreadsheet';
 // import creds from '../secrets/creds.json';
 import * as syncFs from 'fs';
@@ -185,6 +186,16 @@ async function main() {
   
   await fs.writeFile(historyFile, JSON.stringify(history));
   console.log('Wrote new data file, timestamp, and history.');
+
+  // Track the global top 300 (Grandmaster) and compute the GM cutoff.
+  // Never let a GM-tracker problem block the normal leaderboard update.
+  try {
+    console.log('Updating GM tracker...');
+    await updateGmTracker(players.map((p: any) => p.connectCode.code));
+  } catch (e) {
+    console.error('GM tracker failed (leaderboard update continues):', e);
+    await ensureThresholdFile();
+  }
   const rootDir = path.normalize(path.join(__dirname, '..'))
   console.log(rootDir)
   // if no current git changes
