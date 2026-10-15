@@ -5,9 +5,14 @@ on:
   schedule:
     - cron: "0 * * * *"
 
+concurrency:
+  group: update-slippi-rankings
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v4
 
@@ -33,12 +38,19 @@ jobs:
         EOF
       shell: bash
 
-    - name: Download player data from artifacts branch
+    - name: Download saved data from artifacts branch
       run: |
         mkdir -p cron/data
-        git fetch origin artifacts
-        git show origin/artifacts:players-old.json > cron/data/players-old.json || echo '{}' > cron/data/players-old.json
-        git show origin/artifacts:timestamp.json > cron/data/timestamp.json || echo '{}' > cron/data/timestamp.json
+        git fetch origin artifacts || true
+        restore() { git show "origin/artifacts:$1" > "cron/data/$2" 2>/dev/null || rm -f "cron/data/$2"; }
+        # last run's players become this run's "new" file, which fetchStats rotates to "old"
+        restore players-new.json players-new.json
+        [ -s cron/data/players-new.json ] || restore players-old.json players-new.json
+        restore timestamp.json timestamp.json
+        restore history.json history.json
+        restore gm-pool.json gm-pool.json
+        restore gm-threshold.json gm-threshold.json
+        ls -la cron/data
 
     - name: Run ranking update and deploy
       run: |
@@ -46,12 +58,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Commit updated player data
+    - name: Save data to artifacts branch
       run: |
         git checkout --orphan artifacts-temp
-        git rm -rf .
-        cp cron/data/players-new.json players-old.json
-        cp cron/data/timestamp.json timestamp.json
-        git add players-old.json
+        git rm -rf . > /dev/null
+        for f in players-new.json timestamp.json history.json gm-pool.json gm-threshold.json; do
+          [ -f "cron/data/$f" ] && cp "cron/data/$f" "$f" && git add -f "$f"
+        done
         git commit -m "Update player data"
         git push -f origin HEAD:artifacts

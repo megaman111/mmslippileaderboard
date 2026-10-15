@@ -1,6 +1,6 @@
 How to update the leaderboard:
 1. Make sure git is up to date (usually use git add. and then git commit -m ":)" )
-2.Open fetchStats.ts and navigate to const getPlayerConnectCodes array and input it there. 
+2.To add or remove players, edit cron/players.json (one connect code per line, e.g. "MM#391",).
 3.yarn ts-node cron/fetchStats.ts 
 4.Run the deploy script:
    Option A (Recommended, Does both fetch stats and also updates the website): npm run update-and-deploy
@@ -19,10 +19,14 @@ HISTORY TRACKING:
 The leaderboard now tracks player rating history indefinitely across the entire season.
 History snapshots are saved every time you run 'yarn fetch-stats' or 'npm run update-and-deploy'.
 
-When a new Slippi ranked season starts, reset the historical data:
-   npm run reset-season
+New seasons are detected automatically: when Slippi starts a new season, the old
+history is saved to cron/data/history-season-N.json and a fresh one begins.
+(npm run reset-season still works if you ever want to reset by hand.)
 
-This will create a backup and clear history to start fresh for the new season.
+GM CUTOFF:
+Every stats update also runs the GM tracker (cron/gmTracker.ts). It keeps a pool of
+known/likely Grandmasters in cron/data/gm-pool.json and writes the cutoff to
+cron/data/gm-threshold.json. To help it find more GMs, add codes to cron/gm-seed.json.
 
 AUTOMATIC UPDATES (NEW!):
 Set up automatic updates every 30 minutes while your computer is on:

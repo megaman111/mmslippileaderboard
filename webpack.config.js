@@ -4,6 +4,24 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserJSPlugin = require('terser-webpack-plugin');
 const CnameWebpackPlugin = require('cname-webpack-plugin');
 const settings = require('./settings');
+const fs = require('fs');
+
+// Publishes cron/data/history.json next to main.js so the site can load it on demand
+// instead of bundling a file that grows all season.
+class EmitHistoryPlugin {
+  apply(compiler) {
+    compiler.hooks.thisCompilation.tap('EmitHistoryPlugin', (compilation) => {
+      compilation.hooks.processAssets.tap(
+        { name: 'EmitHistoryPlugin', stage: webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONAL },
+        () => {
+          const file = path.join(__dirname, 'cron/data/history.json');
+          const content = fs.existsSync(file) ? fs.readFileSync(file) : '{"version":2,"season":null,"snapshots":[]}';
+          compilation.emitAsset('history.json', new webpack.sources.RawSource(content));
+        },
+      );
+    });
+  }
+}
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 const entry = path.join(__dirname, './src/index.tsx');
@@ -76,6 +94,7 @@ module.exports = {
   },
 
   plugins: [
+    new EmitHistoryPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: JSON.stringify(mode),

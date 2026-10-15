@@ -90,7 +90,8 @@ export function PlayerHistoryModal({ player, history, onClose }: Props) {
       ...player.rankedNetplayProfile,
       ratingOrdinal: rating,
       wins: Math.max(player.rankedNetplayProfile.wins, 5), // Ensure minimum sets for ranking
-      losses: Math.max(player.rankedNetplayProfile.losses, 0)
+      losses: Math.max(player.rankedNetplayProfile.losses, 0),
+      ratingUpdateCount: Math.max(player.rankedNetplayProfile.ratingUpdateCount || 0, 5)
     }
   });
   

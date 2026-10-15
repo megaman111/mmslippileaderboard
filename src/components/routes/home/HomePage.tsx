@@ -17,15 +17,8 @@ import relativeTime from 'dayjs/plugin/relativeTime' // import plugin
 import * as settings from '../../../../settings'
 import ColoradoFlag from '../../../../images/Flag_of_Colorado.svg';
 import { HistoryView } from './HistoryView';
+import { HistoryEntry, loadHistory } from '../../../lib/history';
 dayjs.extend(relativeTime)
-
-// Import history - fetchStats.ts ensures this file exists (even if empty initially)
-import historyJson from '../../../../cron/data/history.json';
-// Type assertion since JSON imports can vary in structure
-const historyData: Array<{timestamp: number, players: Player[]}> = (Array.isArray(historyJson) 
-  ? historyJson 
-  : (historyJson as any)?.default || []) as Array<{timestamp: number, players: Player[]}>;
-
 
 const setCount = (player: Player) => {
   return player.rankedNetplayProfile.wins +
@@ -44,9 +37,6 @@ const sortAndPopulatePlayers = (players: Player[]) => {
 }
 
 export default function HomePage() {
-  console.log(playersNew);
-  console.log(playersOld);
-
   const [showHistory, setShowHistory] = useState(false);
   const [showMobileRanks, setShowMobileRanks] = useState(false);
 
@@ -61,6 +51,14 @@ export default function HomePage() {
       p.oldRankedNetplayProfile = oldData.rankedNetplayProfile
     }
   })
+
+  // Rating history is a separate file (cron/data/history.json -> dist/history.json), loaded after first paint
+  const [historyData, setHistoryData] = useState<HistoryEntry[]>([]);
+  useEffect(() => {
+    loadHistory(players, timestamp.updated)
+      .then(setHistoryData)
+      .catch((e) => console.warn('Rating history unavailable:', e));
+  }, []);
 
   // continuously update
   const updatedAt = dayjs(timestamp.updated);

@@ -2,28 +2,21 @@ import React from 'react';
 import { RANKS } from '../lib/ranks';
 
 export function RankLegend() {
-  // Define rating ranges manually since they're private in the classes
-  const rankData = [
-    { name: 'Grandmaster', range: '2192+ & Top 300', icon: RANKS.find(r => r.name === 'Grandmaster')?.iconUrl },
-    { name: 'Master III', range: '2350+', icon: RANKS.find(r => r.name === 'Master III')?.iconUrl },
-    { name: 'Master II', range: '2275 - 2349', icon: RANKS.find(r => r.name === 'Master II')?.iconUrl },
-    { name: 'Master I', range: '2192 - 2274', icon: RANKS.find(r => r.name === 'Master I')?.iconUrl },
-    { name: 'Diamond III', range: '2137 - 2191', icon: RANKS.find(r => r.name === 'Diamond III')?.iconUrl },
-    { name: 'Diamond II', range: '2074 - 2136', icon: RANKS.find(r => r.name === 'Diamond II')?.iconUrl },
-    { name: 'Diamond I', range: '2004 - 2073', icon: RANKS.find(r => r.name === 'Diamond I')?.iconUrl },
-    { name: 'Platinum III', range: '1928 - 2003', icon: RANKS.find(r => r.name === 'Platinum III')?.iconUrl },
-    { name: 'Platinum II', range: '1843 - 1927', icon: RANKS.find(r => r.name === 'Platinum II')?.iconUrl },
-    { name: 'Platinum I', range: '1752 - 1842', icon: RANKS.find(r => r.name === 'Platinum I')?.iconUrl },
-    { name: 'Gold III', range: '1654 - 1751', icon: RANKS.find(r => r.name === 'Gold III')?.iconUrl },
-    { name: 'Gold II', range: '1549 - 1653', icon: RANKS.find(r => r.name === 'Gold II')?.iconUrl },
-    { name: 'Gold I', range: '1436 - 1548', icon: RANKS.find(r => r.name === 'Gold I')?.iconUrl },
-    { name: 'Silver III', range: '1316 - 1435', icon: RANKS.find(r => r.name === 'Silver III')?.iconUrl },
-    { name: 'Silver II', range: '1189 - 1315', icon: RANKS.find(r => r.name === 'Silver II')?.iconUrl },
-    { name: 'Silver I', range: '1055 - 1188', icon: RANKS.find(r => r.name === 'Silver I')?.iconUrl },
-    { name: 'Bronze III', range: '914 - 1054', icon: RANKS.find(r => r.name === 'Bronze III')?.iconUrl },
-    { name: 'Bronze II', range: '766 - 913', icon: RANKS.find(r => r.name === 'Bronze II')?.iconUrl },
-    { name: 'Bronze I', range: '0 - 765', icon: RANKS.find(r => r.name === 'Bronze I')?.iconUrl },
-  ];
+  // Ranges come straight from the rank definitions (which mirror slippi.gg)
+  const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+  const rankData = [...RANKS].reverse()
+    .filter((r): r is typeof r & { lowerBound: number; upperBound: number } => 'lowerBound' in r)
+    .map(r => ({
+      name: r.name,
+      range: r.name === 'Grandmaster'
+        ? `${fmt(r.lowerBound)}+ & daily top 300`
+        : r.upperBound === Infinity
+          ? `${fmt(r.lowerBound)}+`
+          : r.lowerBound === -Infinity
+            ? `< ${fmt(r.upperBound)}`
+            : `${fmt(r.lowerBound)} – ${fmt(r.upperBound)}`,
+      icon: r.iconUrl,
+    }));
 
   const specialRanks = [
     { name: 'Pending', range: '< 5 sets', icon: RANKS.find(r => r.name === 'Pending')?.iconUrl },

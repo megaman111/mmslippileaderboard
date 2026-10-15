@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Player } from '../lib/player';
+import { getRank } from '../lib/ranks';
 import GrandMasterIcon from '../../images/ranks/GrandMaster.svg';
 import { GmListModal } from './GmListModal';
 
@@ -57,7 +58,7 @@ function changeSince(history: GmThresholdData['history'], current: number, msAgo
   return Math.round((current - past.threshold) * 10) / 10;
 }
 
-const fmtDelta = (d: number) => `${d > 0 ? '+' : ''}${d.toFixed(1)}`;
+const fmtDelta = (d: number) => (Math.abs(d) < 0.05 ? '±0.0' : `${d > 0 ? '+' : ''}${d.toFixed(1)}`);
 
 export function GrandmasterThreshold({ players, gmData }: Props) {
   const [showList, setShowList] = useState(false);
@@ -85,7 +86,11 @@ export function GrandmasterThreshold({ players, gmData }: Props) {
   // this leaderboard's players who are close to the line
   const nearLine = players
     .filter((p) => p.rankedNetplayProfile.wins + p.rankedNetplayProfile.losses >= 5)
-    .map((p) => ({ p, diff: p.rankedNetplayProfile.ratingOrdinal - threshold }))
+    .map((p) => ({
+      p,
+      diff: p.rankedNetplayProfile.ratingOrdinal - threshold,
+      isGM: getRank(p).name === 'Grandmaster',
+    }))
     .filter(({ diff }) => Math.abs(diff) <= 40)
     .sort((a, b) => b.diff - a.diff)
     .slice(0, 6);
@@ -152,9 +157,21 @@ export function GrandmasterThreshold({ players, gmData }: Props) {
         {nearLine.length > 0 && (
           <div className="bg-gray-700 rounded p-3 text-xs">
             <div className="text-gray-300 font-semibold mb-1">Near the line</div>
-            {nearLine.map(({ p, diff }) => (
-              <div key={p.connectCode.code} className="flex justify-between">
-                <span className="text-gray-200 truncate mr-2">{p.displayName}</span>
+            {nearLine.map(({ p, diff, isGM }) => (
+              <div key={p.connectCode.code} className="flex justify-between items-center">
+                <span className="text-gray-200 truncate mr-2">
+                  {p.displayName}
+                  {!isGM && diff >= 0 && (
+                    <span className="ml-1 text-yellow-300" title="Above the cutoff — should get GM at Slippi's next daily update (1 AM PST)">
+                      → GM
+                    </span>
+                  )}
+                  {isGM && diff < 0 && (
+                    <span className="ml-1 text-orange-400" title="Below the cutoff — could lose GM at the next daily update">
+                      at risk
+                    </span>
+                  )}
+                </span>
                 <span className={diff >= 0 ? 'text-green-400' : 'text-red-400'}>{fmtDelta(diff)}</span>
               </div>
             ))}

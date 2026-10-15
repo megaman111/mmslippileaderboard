@@ -1,5 +1,5 @@
 #!/bin/bash -l
-set -e
+set -eo pipefail
 DIR_PATH=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$DIR_PATH/.." 
 

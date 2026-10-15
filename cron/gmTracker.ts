@@ -379,6 +379,12 @@ export async function ensureThresholdFile() {
   }
 }
 
+/** Clears the cutoff trend (used when a new Slippi season starts). */
+export async function resetGmHistory() {
+  const current = await readThresholdFile();
+  if (current) await fs.writeFile(OUT_FILE, JSON.stringify({ ...current, history: [] }));
+}
+
 /** Grow the GM pool, refresh what's due, recompute the cutoff and write gm-threshold.json. */
 export async function updateGmTracker(trackedCodes: string[] = [], opts: { forceDiscovery?: boolean } = {}) {
   await fs.mkdir(DATA_DIR, { recursive: true });
