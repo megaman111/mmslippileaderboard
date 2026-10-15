@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "0 * * * *"
 
+# needs to push the gh-pages site and the artifacts data branch
+permissions:
+  contents: write
+
 concurrency:
   group: update-slippi-rankings
   cancel-in-progress: false
