@@ -18,7 +18,20 @@ export function expandHistory(raw: any, current: Player[]): HistoryEntry[] {
   if (Array.isArray(raw)) return raw as HistoryEntry[]; // legacy format
   if (!raw || !Array.isArray(raw.snapshots)) return [];
   const byCode = new Map(current.map((p) => [p.connectCode.code, p]));
-  return raw.snapshots
+
+  // v3 stores only what changed since the previous snapshot: replay oldest -> newest
+  let snapshots: Array<{ t: number; p: Record<string, CompactStats> }> = raw.snapshots;
+  if (raw.version === 3) {
+    let state: Record<string, CompactStats> = {};
+    snapshots = [...raw.snapshots]
+      .sort((a: any, b: any) => a.t - b.t)
+      .map((snap: any) => {
+        state = { ...state, ...snap.p };
+        return { t: snap.t, p: state };
+      });
+  }
+
+  return snapshots
     .map((snap: { t: number; p: Record<string, CompactStats> }) => ({
       timestamp: snap.t,
       players: Object.keys(snap.p)

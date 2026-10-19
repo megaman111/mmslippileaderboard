@@ -8,6 +8,17 @@ const fs = syncFs.promises;
 
 // Players on the leaderboard live in cron/players.json — add or remove connect codes there.
 const PLAYERS_FILE = path.join(__dirname, 'players.json');
+// Connect codes that should never appear on the leaderboard, even as Grandmasters.
+const EXCLUDED_FILE = path.join(__dirname, 'excluded-players.json');
+
+const getExcludedCodes = async (): Promise<Set<string>> => {
+  try {
+    const codes: string[] = JSON.parse(await fs.readFile(EXCLUDED_FILE, 'utf-8'));
+    return new Set(codes.map((c) => c.trim().toUpperCase()));
+  } catch {
+    return new Set();
+  }
+};
 
 const getPlayerConnectCodes = async (): Promise<string[]> => {
   const codes: string[] = JSON.parse(await fs.readFile(PLAYERS_FILE, 'utf-8'));
@@ -36,15 +47,40 @@ const getPlayers = async () => {
     p2.rankedNetplayProfile.ratingOrdinal - p1.rankedNetplayProfile.ratingOrdinal)
 }
 
+/** Drops GraphQL "__typename" noise to keep the data files (and the site bundle) small. */
+const stripTypenames = (value: any): any => {
+  if (Array.isArray(value)) return value.map(stripTypenames);
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    Object.keys(value).forEach((k) => {
+      if (k !== '__typename') out[k] = stripTypenames(value[k]);
+    });
+    return out;
+  }
+  return value;
+};
+
+/** players-old.json only feeds the "change since last update" arrows, so keep just what that needs. */
+const slimForOld = (p: any) => ({
+  displayName: p.displayName,
+  connectCode: { code: p.connectCode.code },
+  rankedNetplayProfile: {
+    ratingOrdinal: p.rankedNetplayProfile.ratingOrdinal,
+    ratingUpdateCount: p.rankedNetplayProfile.ratingUpdateCount,
+    wins: p.rankedNetplayProfile.wins,
+    losses: p.rankedNetplayProfile.losses,
+  },
+});
+
 async function main() {
   console.log('Starting player fetch.');
-  const players = await getPlayers();
-  if(!players.length) {
+  const tracked = await getPlayers();
+  if(!tracked.length) {
     console.log('Error fetching player data. Terminating.')
     process.exitCode = 1;
     return
   }
-  console.log(`Player fetch complete (${players.length} players).`);
+  console.log(`Player fetch complete (${tracked.length} players).`);
 
   const dataDir = path.join(__dirname, 'data');
   await fs.mkdir(dataDir, { recursive: true });
@@ -53,8 +89,43 @@ async function main() {
   const timestamp = path.join(dataDir, 'timestamp.json')
   const historyFile = path.join(dataDir, 'history.json')
 
+  // Track the global top 300 (Grandmaster), compute the GM cutoff, and get every known GM.
+  // Never let a GM-tracker problem block the normal leaderboard update.
+  let gmPlayers: any[] = [];
+  try {
+    console.log('Updating GM tracker...');
+    gmPlayers = (await updateGmTracker(tracked)).gmPlayers;
+  } catch (e) {
+    console.error('GM tracker failed (leaderboard update continues):', e);
+    await ensureThresholdFile();
+  }
+
+  // Leaderboard = players in cron/players.json + every Grandmaster we know about,
+  // minus anyone in cron/excluded-players.json
+  const excluded = await getExcludedCodes();
+  const isExcluded = (p: any) => excluded.has(String(p.connectCode.code).toUpperCase());
+  const byCode = new Map<string, any>();
+  tracked.filter((p: any) => !isExcluded(p)).forEach((p: any) => byCode.set(p.connectCode.code, p));
+  let addedGMs = 0;
+  gmPlayers.forEach((p: any) => {
+    if (!isExcluded(p) && !byCode.has(p.connectCode.code)) {
+      byCode.set(p.connectCode.code, p);
+      addedGMs++;
+    }
+  });
+  const players = stripTypenames([...byCode.values()]).sort((a: any, b: any) =>
+    b.rankedNetplayProfile.ratingOrdinal - a.rankedNetplayProfile.ratingOrdinal);
+  console.log(`Leaderboard: ${tracked.length} tracked players + ${addedGMs} other Grandmasters = ${players.length}.`);
+
   // rotate players-new -> players-old (used for the "since last update" arrows)
-  if (syncFs.existsSync(newFile)) await fs.rename(newFile, oldFile);
+  if (syncFs.existsSync(newFile)) {
+    try {
+      const previous = JSON.parse(await fs.readFile(newFile, 'utf-8'));
+      await fs.writeFile(oldFile, JSON.stringify((Array.isArray(previous) ? previous : []).map(slimForOld)));
+    } catch {
+      await fs.rename(newFile, oldFile);
+    }
+  }
   await fs.writeFile(newFile, JSON.stringify(players));
   await fs.writeFile(timestamp, JSON.stringify({updated: Date.now()}));
 
@@ -72,16 +143,6 @@ async function main() {
   const added = addSnapshot(history, players);
   await writeHistory(historyFile, history);
   console.log(`History: ${history.snapshots.length} snapshots (${added ? 'added one' : 'no changes since last run'}).`);
-
-  // Track the global top 300 (Grandmaster) and compute the GM cutoff.
-  // Never let a GM-tracker problem block the normal leaderboard update.
-  try {
-    console.log('Updating GM tracker...');
-    await updateGmTracker(players.map((p: any) => p.connectCode.code));
-  } catch (e) {
-    console.error('GM tracker failed (leaderboard update continues):', e);
-    await ensureThresholdFile();
-  }
 
   // Deploying is done by the caller (npm run update-and-deploy, the auto-update task, or GitHub Actions).
   console.log('Stats update complete.');

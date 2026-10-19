@@ -40,6 +40,7 @@ const DAY = 24 * HOUR;
 const HOT_RATING = 2150;      // GMs and anyone close: refreshed every few hours
 const WARM_RATING = 1900;     // could climb into GM within days: refreshed daily
 const HOT_INTERVAL = 3 * HOUR;
+const GM_INTERVAL = 50 * 60 * 1000; // current GMs are shown on the leaderboard, so refresh them every run
 const WARM_INTERVAL = DAY;
 const COLD_INTERVAL = 7 * DAY;
 const DISCOVERY_INTERVAL = DAY;
@@ -56,6 +57,7 @@ interface PoolEntry {
   continent: string | null;
   checkedAt: number; // 0 = never
   missing?: boolean;
+  profile?: any; // full leaderboard Player object from the last refresh
 }
 
 interface Pool {
@@ -98,12 +100,17 @@ const PROFILE_QUERY = `query GmTrackerQuery($cc: String, $uid: String) {
   getUser(fbUid: $uid, connectCode: $cc) {
     displayName
     connectCode { code }
+    activeSubscription { level }
     rankedNetplayProfile {
+      id
       ratingOrdinal
       ratingUpdateCount
+      wins
+      losses
       dailyGlobalPlacement
       dailyRegionalPlacement
       continent
+      characters { character gameCount }
     }
   }
 }`;
@@ -221,6 +228,42 @@ function addCode(pool: Pool, code: string) {
   return true;
 }
 
+const isCurrentGM = (p: PoolEntry) =>
+  !p.missing && (p.global !== null || p.regional !== null) && (p.rating ?? 0) >= GM_MIN_RATING;
+
+/** Same shape fetchStats writes to players-new.json */
+export function toLeaderboardPlayer(user: any) {
+  const prof = user.rankedNetplayProfile || {};
+  return {
+    displayName: user.displayName,
+    connectCode: { code: user.connectCode?.code },
+    rankedNetplayProfile: prof,
+    continent: prof.continent ?? null,
+    subscriptionLevel: user.activeSubscription?.level ?? null,
+  };
+}
+
+/** Feed already-fetched leaderboard players into the pool so they aren't queried twice. */
+function absorbPlayers(pool: Pool, players: any[], now: number) {
+  players.forEach((pl) => {
+    const code = pl?.connectCode?.code;
+    if (!code) return;
+    addCode(pool, code);
+    const entry = pool.players[code.trim().toUpperCase()];
+    if (!entry) return;
+    const prof = pl.rankedNetplayProfile || {};
+    entry.checkedAt = now;
+    entry.missing = false;
+    entry.name = pl.displayName ?? null;
+    entry.rating = typeof prof.ratingOrdinal === 'number' ? prof.ratingOrdinal : null;
+    entry.updates = prof.ratingUpdateCount ?? 0;
+    entry.global = prof.dailyGlobalPlacement ?? null;
+    entry.regional = prof.dailyRegionalPlacement ?? null;
+    entry.continent = prof.continent ?? null;
+    entry.profile = pl;
+  });
+}
+
 function dueList(pool: Pool, now: number): string[] {
   const scored: Array<[string, number]> = [];
   Object.values(pool.players).forEach((p) => {
@@ -228,7 +271,8 @@ function dueList(pool: Pool, now: number): string[] {
     let priority: number | null = null;
     if (p.checkedAt === 0) priority = (p.rating ?? 0) >= HOT_RATING ? 0 : (p.rating ?? 0) >= WARM_RATING ? 1 : 2.5;
     else if (p.missing) priority = age > 30 * DAY ? 4 : null;
-    else if (p.global !== null || p.regional !== null || (p.rating ?? 0) >= HOT_RATING) priority = age > HOT_INTERVAL ? 0 : null;
+    else if (isCurrentGM(p)) priority = age > GM_INTERVAL || !p.profile ? 0 : null;
+    else if (p.global !== null || p.regional !== null || (p.rating ?? 0) >= HOT_RATING) priority = age > HOT_INTERVAL ? 0.5 : null;
     else if ((p.rating ?? 0) >= WARM_RATING) priority = age > WARM_INTERVAL ? 2 : null;
     else priority = age > COLD_INTERVAL ? 3 : null;
     if (priority !== null) scored.push([p.code, priority * 1e15 + p.checkedAt]);
@@ -260,6 +304,7 @@ async function refresh(pool: Pool, codes: string[]) {
             entry.global = prof.dailyGlobalPlacement ?? null;
             entry.regional = prof.dailyRegionalPlacement ?? null;
             entry.continent = prof.continent ?? null;
+            entry.profile = toLeaderboardPlayer(user);
           }
         } catch {
           errors++;
@@ -386,13 +431,15 @@ export async function resetGmHistory() {
 }
 
 /** Grow the GM pool, refresh what's due, recompute the cutoff and write gm-threshold.json. */
-export async function updateGmTracker(trackedCodes: string[] = [], opts: { forceDiscovery?: boolean } = {}) {
+export async function updateGmTracker(trackedPlayers: any[] = [], opts: { forceDiscovery?: boolean } = {}) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   const now = Date.now();
   const pool = await loadPool();
 
   let added = 0;
-  trackedCodes.forEach((c) => addCode(pool, c) && added++);
+  const before = Object.keys(pool.players).length;
+  absorbPlayers(pool, trackedPlayers, now);
+  added += Object.keys(pool.players).length - before;
   (await discoverFromSlippiTop50()).forEach((c) => addCode(pool, c) && added++);
   if (opts.forceDiscovery || now - pool.lastDiscovery > DISCOVERY_INTERVAL) {
     (await discoverFromSiblingLeaderboards()).forEach((c) => addCode(pool, c) && added++);
@@ -413,7 +460,12 @@ export async function updateGmTracker(trackedCodes: string[] = [], opts: { force
     `[gm] cutoff ≈ ${result.threshold ?? 'n/a'} ±${result.uncertainty ?? '-'} ` +
       `(${result.knownGMs}/${GM_SLOTS} GMs known, deepest #${result.maxPlacementSeen ?? '-'}, ${result.confidence})`,
   );
-  return result;
+
+  // every known current GM, as leaderboard rows
+  const gmPlayers = Object.values(pool.players)
+    .filter((p) => isCurrentGM(p) && p.profile && now - p.checkedAt < 36 * HOUR)
+    .map((p) => p.profile);
+  return { result, gmPlayers };
 }
 
 if (require.main === module) {
