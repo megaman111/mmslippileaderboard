@@ -40,11 +40,12 @@ export default function HomePage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showMobileRanks, setShowMobileRanks] = useState(false);
 
-  const rankedPlayersOld = sortAndPopulatePlayers(playersOld)
+  // players-old.json is a slimmed copy (see cron/fetchStats.ts), so its JSON type isn't a full Player
+  const rankedPlayersOld = sortAndPopulatePlayers(playersOld as unknown as Player[])
   const oldPlayersMap = new Map(
     rankedPlayersOld.map((p) => [p.connectCode.code, p]));
   
-  const players = sortAndPopulatePlayers(playersNew);
+  const players = sortAndPopulatePlayers(playersNew as unknown as Player[]);
   players.forEach((p) => {
     const oldData = oldPlayersMap.get(p.connectCode.code)
     if(oldData) {
