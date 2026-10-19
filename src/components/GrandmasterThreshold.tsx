@@ -27,6 +27,8 @@ export interface GmThresholdData {
   method: string;
   fitPoints: number;
   knownGMs: number;
+  region?: string;
+  homeKnownGMs?: number;
   maxPlacementSeen: number | null;
   poolSize: number;
   lowestGM: GmListEntry | null;
@@ -58,6 +60,14 @@ function changeSince(history: GmThresholdData['history'], current: number, msAgo
   return Math.round((current - past.threshold) * 10) / 10;
 }
 
+export const REGION_LABEL: Record<string, string> = {
+  NORTH_AMERICA: 'NA',
+  EUROPE: 'EU',
+  SOUTH_AMERICA: 'SA',
+  OCEANIA: 'OCE',
+  ASIA: 'Asia',
+};
+
 const fmtDelta = (d: number) => (Math.abs(d) < 0.05 ? '±0.0' : `${d > 0 ? '+' : ''}${d.toFixed(1)}`);
 
 export function GrandmasterThreshold({ players, gmData }: Props) {
@@ -80,6 +90,9 @@ export function GrandmasterThreshold({ players, gmData }: Props) {
 
   const day = changeSince(gmData.history, threshold, 24 * 60 * 60 * 1000);
   const week = changeSince(gmData.history, threshold, 7 * 24 * 60 * 60 * 1000);
+  const region = gmData.region || 'NORTH_AMERICA';
+  const regionLabel = REGION_LABEL[region] || region;
+  const homeGMs = gmData.gms.filter((g) => g.continent === region);
   const globalKnown = gmData.gms.filter((g) => g.global !== null).length;
   const coveragePct = Math.min(100, Math.round((globalKnown / gmData.slots) * 100));
 
@@ -99,7 +112,7 @@ export function GrandmasterThreshold({ players, gmData }: Props) {
     <div className="bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 w-72 mt-4">
       <h3 className="text-white text-lg font-bold mb-3 text-center border-b border-gray-600 pb-2 flex items-center justify-center gap-2">
         <img src={GrandMasterIcon} alt="Grandmaster" className="w-6 h-6" />
-        GM Cutoff
+        {regionLabel} GM Cutoff
       </h3>
 
       <div className="space-y-3">
@@ -184,20 +197,21 @@ export function GrandmasterThreshold({ players, gmData }: Props) {
           className="w-full bg-gray-700 rounded p-3 text-left hover:bg-gray-600 transition-colors duration-200"
         >
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-gray-300 font-semibold">GMs tracked</span>
-            <span className="text-white">
-              {globalKnown}/{gmData.slots} global
-            </span>
+            <span className="text-gray-300 font-semibold">{regionLabel} GMs tracked</span>
+            <span className="text-white">{homeGMs.length}</span>
           </div>
           <div className="h-1.5 bg-gray-600 rounded">
             <div className="h-1.5 bg-yellow-500 rounded" style={{ width: `${coveragePct}%` }} />
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            {globalKnown} of the world top {gmData.slots} identified
           </div>
           <div className="text-xs text-indigo-300 mt-2">View GM list →</div>
         </button>
 
         <div className="text-xs text-gray-400 text-center pt-2 border-t border-gray-600">
-          GM = {gmData.minRating}+ rating and top {gmData.slots} worldwide (or top of a smaller region), set once a day
-          by Slippi.
+          {regionLabel} players make GM with {gmData.minRating}+ rating and a world top {gmData.slots} placement, set
+          once a day by Slippi. Cutoff fitted from {regionLabel} GMs only.
         </div>
       </div>
 

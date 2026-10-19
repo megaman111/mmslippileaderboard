@@ -27,6 +27,9 @@ GM CUTOFF:
 Every stats update also runs the GM tracker (cron/gmTracker.ts). It keeps a pool of
 known/likely Grandmasters in cron/data/gm-pool.json and writes the cutoff to
 cron/data/gm-threshold.json. To help it find more GMs, add codes to cron/gm-seed.json.
+Every known North American GM is added to the leaderboard automatically, and the cutoff
+is fitted from NA GMs only. To keep someone off the board, add their code to
+cron/excluded-players.json.
 
 AUTOMATIC UPDATES (NEW!):
 Set up automatic updates every 30 minutes while your computer is on:

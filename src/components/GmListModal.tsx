@@ -34,7 +34,7 @@ function Row({ e, label, highlight }: { e: GmListEntry; label: string; highlight
 }
 
 export function GmListModal({ gmData, onClose }: Props) {
-  const [region, setRegion] = useState<string>('ALL');
+  const [region, setRegion] = useState<string>(gmData.region || 'NORTH_AMERICA');
   const match = (e: GmListEntry) => region === 'ALL' || e.continent === region;
 
   const global = gmData.gms.filter((g) => g.global !== null).sort((a, b) => a.global! - b.global!);

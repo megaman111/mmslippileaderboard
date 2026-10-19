@@ -28,6 +28,8 @@ const fs = syncFs.promises;
 
 export const GM_SLOTS = 300;
 export const GM_MIN_RATING = 2191.75; // same constant slippi.gg uses for Master 1 / GM eligibility
+// Region this leaderboard cares about: the cutoff is fitted from, and the leaderboard shows, GMs from here only.
+export const HOME_CONTINENT = process.env.GM_CONTINENT || 'NORTH_AMERICA';
 
 const DATA_DIR = path.join(__dirname, 'data');
 const POOL_FILE = path.join(DATA_DIR, 'gm-pool.json');
@@ -63,7 +65,11 @@ interface PoolEntry {
 interface Pool {
   players: Record<string, PoolEntry>;
   lastDiscovery: number;
+  discoveryVersion?: number;
 }
+
+// bump when discovery gains new sources, so the next run searches right away
+const DISCOVERY_VERSION = 2;
 
 export interface GmListEntry {
   code: string;
@@ -84,6 +90,8 @@ export interface GmThresholdData {
   method: string;
   fitPoints: number;
   knownGMs: number;
+  region?: string;
+  homeKnownGMs?: number;
   maxPlacementSeen: number | null;
   poolSize: number;
   lowestGM: GmListEntry | null;
@@ -116,6 +124,12 @@ const PROFILE_QUERY = `query GmTrackerQuery($cc: String, $uid: String) {
 }`;
 
 const CODE_RE = /"?code"?\s*:\s*"([^"#\s\\]{1,12}#\d{1,4})"/g;
+
+// GitHub Actions provides GITHUB_TOKEN, which raises the API limit from 60 to 1000 requests/hour
+const githubHeaders = (): Record<string, string> => ({
+  'User-Agent': 'slippi-leaderboard-gm-tracker',
+  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+});
 
 async function fetchJson(url: string, init?: any): Promise<any> {
   const res = await fetch(url, init);
@@ -171,7 +185,7 @@ async function discoverFromSiblingLeaderboards(): Promise<string[]> {
     apiCalls++;
     try {
       const forks = await fetchJson(`https://api.github.com/repos/${repo}/forks?per_page=100`, {
-        headers: { 'User-Agent': 'slippi-leaderboard-gm-tracker' },
+        headers: githubHeaders(),
       });
       if (Array.isArray(forks)) forks.forEach((f: any) => f?.full_name && !seen.has(f.full_name) && queue.push(f.full_name));
     } catch (e) {
@@ -195,13 +209,67 @@ async function discoverFromSiblingLeaderboards(): Promise<string[]> {
   return [...codes];
 }
 
+/**
+ * Other Slippi leaderboards / tools on GitHub that aren't forks of the template:
+ * search for them, then pull connect codes out of their data and source files.
+ */
+async function discoverFromGithubSearch(): Promise<string[]> {
+  const queries = ['slippi leaderboard', 'slippi ranked', 'slippi rankings', 'melee leaderboard slippi', 'slippi ladder'];
+  const repos = new Map<string, string>();
+  for (const q of queries) {
+    try {
+      const res = await fetchJson(`https://api.github.com/search/repositories?per_page=100&q=${encodeURIComponent(q)}`, {
+        headers: githubHeaders(),
+      });
+      (res.items || []).forEach((r: any) => repos.set(r.full_name, r.default_branch));
+    } catch (e) {
+      console.log(`[gm] GitHub search stopped: ${(e as Error).message}`);
+      break;
+    }
+  }
+  const codes = new Set<string>();
+  const textFile = /\.(json|js|ts|tsx|jsx|csv|tsv|txt|py|md|html|ya?ml)$/i;
+  const skip = /node_modules|package-lock|yarn\.lock|\.min\.|vendor/i;
+  const codeRe = /(?<![A-Za-z0-9#])([A-Z0-9]{1,8}#\d{1,4})(?![0-9A-Za-z])/g;
+  let scanned = 0;
+  for (const [repo, branch] of [...repos].slice(0, 80)) {
+    for (const ref of [branch, 'gh-pages']) {
+      let tree: any = null;
+      try {
+        tree = await fetchJson(`https://api.github.com/repos/${repo}/git/trees/${ref}?recursive=1`, { headers: githubHeaders() });
+      } catch {
+        continue; // branch missing, or rate limited
+      }
+      const files = (tree.tree || [])
+        .filter((f: any) => f.type === 'blob' && textFile.test(f.path) && !skip.test(f.path) && (f.size || 0) < 3e6)
+        .slice(0, 80);
+      await Promise.all(
+        files.map(async (f: any) => {
+          const path = f.path.split('/').map(encodeURIComponent).join('/');
+          const text = await fetchText(`https://raw.githubusercontent.com/${repo}/${ref}/${path}`);
+          if (!text) return;
+          const re = new RegExp(codeRe.source, 'g');
+          let m: RegExpExecArray | null;
+          while ((m = re.exec(text)) !== null) if (!/^EXAMPLE/.test(m[1])) codes.add(m[1]);
+        }),
+      );
+      scanned++;
+    }
+  }
+  console.log(`[gm] GitHub search: ${repos.size} repos, ${scanned} branches scanned, ${codes.size} codes`);
+  return [...codes];
+}
+
 // ---------- pool ----------
 
 async function loadPool(): Promise<Pool> {
+  let pool: Pool;
   try {
-    return JSON.parse(await fs.readFile(POOL_FILE, 'utf-8'));
+    pool = JSON.parse(await fs.readFile(POOL_FILE, 'utf-8'));
   } catch {
-    const pool: Pool = { players: {}, lastDiscovery: 0 };
+    pool = { players: {}, lastDiscovery: 0 };
+  }
+  {
     try {
       // seed rows: "CODE#1" or [code, rating, globalPlacement, regionalPlacement, ratingUpdateCount]
       const seed: Array<string | [string, number, number, number, number]> = JSON.parse(await fs.readFile(SEED_FILE, 'utf-8'));
@@ -213,12 +281,11 @@ async function loadPool(): Promise<Pool> {
           e.updates = row[4] ?? 0;
         }
       });
-      console.log(`[gm] new pool seeded with ${seed.length} codes`);
     } catch {
       /* no seed */
     }
-    return pool;
   }
+  return pool;
 }
 
 function addCode(pool: Pool, code: string) {
@@ -346,22 +413,27 @@ const toListEntry = (p: PoolEntry): GmListEntry => ({
   continent: p.continent,
 });
 
+const REGION_LABEL: Record<string, string> = { NORTH_AMERICA: 'NA', EUROPE: 'EU', SOUTH_AMERICA: 'SA', OCEANIA: 'OCE', ASIA: 'Asia' };
+
 export function computeThreshold(pool: Pool, previous: GmThresholdData | null, now = Date.now()): GmThresholdData {
   const fresh = Object.values(pool.players).filter((p) => !p.missing && p.rating !== null && now - p.checkedAt < 36 * HOUR);
   const gms = fresh.filter((p) => p.global !== null && (p.rating ?? 0) >= GM_MIN_RATING).sort((a, b) => a.global! - b.global!);
   const regionalOnly = fresh.filter((p) => p.global === null && p.regional !== null && (p.rating ?? 0) >= GM_MIN_RATING);
+  const isHome = (p: PoolEntry) => p.continent === HOME_CONTINENT;
+  // home-region GMs ranked by world placement: the cutoff is fitted from these only
+  const homeGMs = gms.filter(isHome);
   const nonGMs = fresh
-    .filter((p) => p.global === null && p.regional === null && p.updates >= 5 && (p.rating ?? 0) >= GM_MIN_RATING)
+    .filter((p) => isHome(p) && p.global === null && p.regional === null && p.updates >= 5 && (p.rating ?? 0) >= GM_MIN_RATING)
     .sort((a, b) => b.rating! - a.rating!);
 
-  let points = gms.filter((p) => p.global! >= FIT_MIN_PLACEMENT).map((p) => [p.global!, p.rating!] as [number, number]);
-  if (points.length < 6) points = gms.slice(-40).map((p) => [p.global!, p.rating!] as [number, number]);
+  let points = homeGMs.filter((p) => p.global! >= FIT_MIN_PLACEMENT).map((p) => [p.global!, p.rating!] as [number, number]);
+  if (points.length < 6) points = homeGMs.slice(-40).map((p) => [p.global!, p.rating!] as [number, number]);
 
   let threshold: number | null = null;
   let uncertainty: number | null = null;
   let confidence: GmThresholdData['confidence'] = 'None';
   let method = 'Not enough GM data yet';
-  const maxPlacementSeen = gms.length ? gms[gms.length - 1].global : null;
+  const maxPlacementSeen = homeGMs.length ? homeGMs[homeGMs.length - 1].global : null;
 
   if (points.length >= 3) {
     const fit = theilSen(points, GM_SLOTS);
@@ -370,11 +442,11 @@ export function computeThreshold(pool: Pool, previous: GmThresholdData | null, n
     uncertainty = Math.max(1, Math.round(fit.mad + Math.abs(fit.slope) * Math.max(0, gap) * 0.5));
     threshold = Math.max(GM_MIN_RATING, Math.round(fit.estimate * 10) / 10);
     confidence = points.length >= 20 && gap <= 10 ? 'High' : points.length >= 8 && gap <= 30 ? 'Medium' : 'Low';
-    method = `Fit of ${points.length} known GMs' placements (deepest #${maxPlacementSeen})`;
+    method = `Fit of ${points.length} ${REGION_LABEL[HOME_CONTINENT] || HOME_CONTINENT} GMs' world placements (deepest #${maxPlacementSeen})`;
   }
 
-  const closest = gms.length
-    ? gms.reduce((best, p) => (Math.abs(p.global! - GM_SLOTS) < Math.abs(best.global! - GM_SLOTS) ? p : best))
+  const closest = homeGMs.length
+    ? homeGMs.reduce((best, p) => (Math.abs(p.global! - GM_SLOTS) < Math.abs(best.global! - GM_SLOTS) ? p : best))
     : null;
 
   const history = [...(previous?.history ?? [])];
@@ -395,9 +467,11 @@ export function computeThreshold(pool: Pool, previous: GmThresholdData | null, n
     method,
     fitPoints: points.length,
     knownGMs: gms.length + regionalOnly.length,
+    region: HOME_CONTINENT,
+    homeKnownGMs: homeGMs.length + regionalOnly.filter(isHome).length,
     maxPlacementSeen,
     poolSize: Object.keys(pool.players).length,
-    lowestGM: gms.length ? toListEntry(gms.reduce((a, b) => (a.rating! < b.rating! ? a : b))) : null,
+    lowestGM: homeGMs.length ? toListEntry(homeGMs.reduce((a, b) => (a.rating! < b.rating! ? a : b))) : null,
     highestNonGM: nonGMs.length ? toListEntry(nonGMs[0]) : null,
     closestToCutoff: closest ? toListEntry(closest) : null,
     gms: [...gms, ...regionalOnly].map(toListEntry),
@@ -441,9 +515,11 @@ export async function updateGmTracker(trackedPlayers: any[] = [], opts: { forceD
   absorbPlayers(pool, trackedPlayers, now);
   added += Object.keys(pool.players).length - before;
   (await discoverFromSlippiTop50()).forEach((c) => addCode(pool, c) && added++);
-  if (opts.forceDiscovery || now - pool.lastDiscovery > DISCOVERY_INTERVAL) {
+  if (opts.forceDiscovery || now - pool.lastDiscovery > DISCOVERY_INTERVAL || pool.discoveryVersion !== DISCOVERY_VERSION) {
     (await discoverFromSiblingLeaderboards()).forEach((c) => addCode(pool, c) && added++);
+    (await discoverFromGithubSearch()).forEach((c) => addCode(pool, c) && added++);
     pool.lastDiscovery = now;
+    pool.discoveryVersion = DISCOVERY_VERSION;
   }
   console.log(`[gm] pool: ${Object.keys(pool.players).length} codes (+${added} new)`);
 
@@ -463,7 +539,7 @@ export async function updateGmTracker(trackedPlayers: any[] = [], opts: { forceD
 
   // every known current GM, as leaderboard rows
   const gmPlayers = Object.values(pool.players)
-    .filter((p) => isCurrentGM(p) && p.profile && now - p.checkedAt < 36 * HOUR)
+    .filter((p) => isCurrentGM(p) && p.continent === HOME_CONTINENT && p.profile && now - p.checkedAt < 36 * HOUR)
     .map((p) => p.profile);
   return { result, gmPlayers };
 }
