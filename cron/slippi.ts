@@ -39,6 +39,9 @@ fragment userProfilePage on User {
     ...profileFields
     __typename
   }
+  rankedRating {
+    mmr
+  }
   __typename
 }
 
