@@ -58,6 +58,7 @@ interface PoolEntry {
   regional: number | null;
   continent: string | null;
   checkedAt: number; // 0 = never
+  mmr?: number | null; // hidden skill rating: decides how often to re-check after a season's Elo reset
   missing?: boolean;
   profile?: any; // full leaderboard Player object from the last refresh
 }
@@ -109,6 +110,7 @@ const PROFILE_QUERY = `query GmTrackerQuery($cc: String, $uid: String) {
     displayName
     connectCode { code }
     activeSubscription { level }
+    rankedRating { mmr }
     rankedNetplayProfile {
       id
       ratingOrdinal
@@ -307,6 +309,7 @@ export function toLeaderboardPlayer(user: any) {
     rankedNetplayProfile: prof,
     continent: prof.continent ?? null,
     subscriptionLevel: user.activeSubscription?.level ?? null,
+    mmr: user.rankedRating?.mmr ?? null,
   };
 }
 
@@ -327,6 +330,7 @@ function absorbPlayers(pool: Pool, players: any[], now: number) {
     entry.global = prof.dailyGlobalPlacement ?? null;
     entry.regional = prof.dailyRegionalPlacement ?? null;
     entry.continent = prof.continent ?? null;
+    entry.mmr = typeof pl.mmr === 'number' ? pl.mmr : entry.mmr ?? null;
     entry.profile = pl;
   });
 }
@@ -336,11 +340,12 @@ function dueList(pool: Pool, now: number): string[] {
   Object.values(pool.players).forEach((p) => {
     const age = now - p.checkedAt;
     let priority: number | null = null;
-    if (p.checkedAt === 0) priority = (p.rating ?? 0) >= HOT_RATING ? 0 : (p.rating ?? 0) >= WARM_RATING ? 1 : 2.5;
+    const skill = Math.max(p.rating ?? 0, p.mmr ?? 0); // after a season reset, MMR shows who will climb back fast
+    if (p.checkedAt === 0) priority = skill >= HOT_RATING ? 0 : skill >= WARM_RATING ? 1 : 2.5;
     else if (p.missing) priority = age > 30 * DAY ? 4 : null;
     else if (isCurrentGM(p)) priority = age > GM_INTERVAL || !p.profile ? 0 : null;
-    else if (p.global !== null || p.regional !== null || (p.rating ?? 0) >= HOT_RATING) priority = age > HOT_INTERVAL ? 0.5 : null;
-    else if ((p.rating ?? 0) >= WARM_RATING) priority = age > WARM_INTERVAL ? 2 : null;
+    else if (p.global !== null || p.regional !== null || skill >= HOT_RATING) priority = age > HOT_INTERVAL ? 0.5 : null;
+    else if (skill >= WARM_RATING) priority = age > WARM_INTERVAL ? 2 : null;
     else priority = age > COLD_INTERVAL ? 3 : null;
     if (priority !== null) scored.push([p.code, priority * 1e15 + p.checkedAt]);
   });
@@ -371,6 +376,7 @@ async function refresh(pool: Pool, codes: string[]) {
             entry.global = prof.dailyGlobalPlacement ?? null;
             entry.regional = prof.dailyRegionalPlacement ?? null;
             entry.continent = prof.continent ?? null;
+            entry.mmr = user.rankedRating?.mmr ?? null;
             entry.profile = toLeaderboardPlayer(user);
           }
         } catch {
@@ -426,23 +432,34 @@ export function computeThreshold(pool: Pool, previous: GmThresholdData | null, n
     .filter((p) => isHome(p) && p.global === null && p.regional === null && p.updates >= 5 && (p.rating ?? 0) >= GM_MIN_RATING)
     .sort((a, b) => b.rating! - a.rating!);
 
-  let points = homeGMs.filter((p) => p.global! >= FIT_MIN_PLACEMENT).map((p) => [p.global!, p.rating!] as [number, number]);
-  if (points.length < 6) points = homeGMs.slice(-40).map((p) => [p.global!, p.rating!] as [number, number]);
+  // every placed home-region player, GM or not: world placement is a pure Elo ranking
+  const homePlaced = fresh.filter((p) => isHome(p) && p.global !== null).sort((a, b) => a.global! - b.global!);
+  let points = homePlaced.filter((p) => p.global! >= FIT_MIN_PLACEMENT).map((p) => [p.global!, p.rating!] as [number, number]);
+  if (points.length < 6) points = homePlaced.slice(-40).map((p) => [p.global!, p.rating!] as [number, number]);
 
   let threshold: number | null = null;
   let uncertainty: number | null = null;
   let confidence: GmThresholdData['confidence'] = 'None';
   let method = 'Not enough GM data yet';
-  const maxPlacementSeen = homeGMs.length ? homeGMs[homeGMs.length - 1].global : null;
+  const maxPlacementSeen = homePlaced.length ? homePlaced[homePlaced.length - 1].global : null;
 
   if (points.length >= 3) {
     const fit = theilSen(points, GM_SLOTS);
     const gap = GM_SLOTS - (maxPlacementSeen ?? 0);
     // extrapolation error grows with distance from the deepest known placement
     uncertainty = Math.max(1, Math.round(fit.mad + Math.abs(fit.slope) * Math.max(0, gap) * 0.5));
-    threshold = Math.max(GM_MIN_RATING, Math.round(fit.estimate * 10) / 10);
-    confidence = points.length >= 20 && gap <= 10 ? 'High' : points.length >= 8 && gap <= 30 ? 'Medium' : 'Low';
-    method = `Fit of ${points.length} ${REGION_LABEL[HOME_CONTINENT] || HOME_CONTINENT} GMs' world placements (deepest #${maxPlacementSeen})`;
+    const label = REGION_LABEL[HOME_CONTINENT] || HOME_CONTINENT;
+    if (fit.estimate + uncertainty < GM_MIN_RATING) {
+      // world #300 is still below the GM minimum (normal early in a season): reaching 2191.75 Elo is enough
+      threshold = GM_MIN_RATING;
+      uncertainty = null;
+      confidence = 'High';
+      method = `World #${GM_SLOTS} is still under ${GM_MIN_RATING}, so ${GM_MIN_RATING} Elo is enough (from ${points.length} placed ${label} players)`;
+    } else {
+      threshold = Math.max(GM_MIN_RATING, Math.round(fit.estimate * 10) / 10);
+      confidence = points.length >= 20 && gap <= 10 ? 'High' : points.length >= 8 && gap <= 30 ? 'Medium' : 'Low';
+      method = `Fit of ${points.length} placed ${label} players' world placements (deepest #${maxPlacementSeen})`;
+    }
   }
 
   const closest = homeGMs.length
