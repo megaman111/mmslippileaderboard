@@ -24,4 +24,5 @@ export interface Player {
   oldRankedNetplayProfile?: RankedNetplayProfile; // populated separately
   continent?: string | null;
   subscriptionLevel?: string | null;
+  mmr?: number | null; // hidden skill rating (season 6+), separate from ladder Elo
 }
