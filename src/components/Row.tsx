@@ -162,8 +162,13 @@ export function Row({ player, history, playerRank }: Props) {
             {playerRankData.name}
           </div>
           <div className="text-gray-300 md:text-sm text-xs">
-            {isActive && Math.floor(player.rankedNetplayProfile.ratingOrdinal)}
+            {isActive && <>Elo {Math.floor(player.rankedNetplayProfile.ratingOrdinal)}</>}
             {isActive && Boolean(ratingChange) && changePlusMinus(ratingChange)}
+            {typeof player.mmr === 'number' && (
+              <div className="text-cyan-300 text-xs" title="MMR: Slippi's hidden skill rating, separate from ladder Elo since season 6">
+                MMR {Math.floor(player.mmr)}
+              </div>
+            )}
             {isGrandmaster && globalRank && (
               <div className="text-yellow-400 text-xs">
                 Global #{globalRank}
