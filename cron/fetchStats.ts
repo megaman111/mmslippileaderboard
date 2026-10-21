@@ -25,6 +25,10 @@ const getPlayerConnectCodes = async (): Promise<string[]> => {
   return [...new Set(codes.map((c) => c.trim()).filter(Boolean))];
 };
 
+// Elo first; ties (everyone starts a season at 1100) broken by MMR
+const byRating = (a: any, b: any) =>
+  (b.rankedNetplayProfile.ratingOrdinal - a.rankedNetplayProfile.ratingOrdinal) || ((b.mmr ?? 0) - (a.mmr ?? 0));
+
 const getPlayers = async () => {
   const codes = await getPlayerConnectCodes()
   console.log(`Found ${codes.length} player codes`)
@@ -41,10 +45,11 @@ const getPlayers = async () => {
         rankedNetplayProfile: user.rankedNetplayProfile,
         continent: user.rankedNetplayProfile?.continent ?? null,
         subscriptionLevel: user.activeSubscription?.level ?? null,
+        // hidden skill rating, separate from the ladder Elo since season 6
+        mmr: user.rankedRating?.mmr ?? null,
       };
     });
-  return unsortedPlayers.sort((p1, p2) =>
-    p2.rankedNetplayProfile.ratingOrdinal - p1.rankedNetplayProfile.ratingOrdinal)
+  return unsortedPlayers.sort(byRating)
 }
 
 /** Drops GraphQL "__typename" noise to keep the data files (and the site bundle) small. */
@@ -113,8 +118,7 @@ async function main() {
       addedGMs++;
     }
   });
-  const players = stripTypenames([...byCode.values()]).sort((a: any, b: any) =>
-    b.rankedNetplayProfile.ratingOrdinal - a.rankedNetplayProfile.ratingOrdinal);
+  const players = stripTypenames([...byCode.values()]).sort(byRating);
   console.log(`Leaderboard: ${tracked.length} tracked players + ${addedGMs} other Grandmasters = ${players.length}.`);
 
   // rotate players-new -> players-old (used for the "since last update" arrows)
